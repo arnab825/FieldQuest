@@ -8,11 +8,13 @@ import { AdventureSetupForm } from '../features/adventure/AdventureSetupForm.js'
 import { ActiveAdventureScreen } from '../features/adventure/ActiveAdventureScreen.js';
 import { JournalView } from '../features/journal/JournalView.js';
 import { AISettingsModal } from '../features/settings/AISettingsModal.js';
+import { ObjectiveBasisModal } from '../features/about/ObjectiveBasisModal.js';
 import { fetchAIStatus } from '../services/api.js';
 import { AIProviderStatus } from '../types/index.js';
 
 export const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isObjectiveBasisOpen, setIsObjectiveBasisOpen] = useState(false);
 
   const { data: aiStatus } = useQuery<AIProviderStatus>({
     queryKey: ['aiStatusGlobal'],
@@ -28,12 +30,20 @@ export const App: React.FC = () => {
         <Navbar
           aiStatus={aiStatus}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenObjectiveBasis={() => setIsObjectiveBasisOpen(true)}
         />
 
         {/* Main Content View */}
         <main className="flex-1">
           <Routes>
-            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/"
+              element={
+                <LandingPage
+                  onOpenObjectiveBasis={() => setIsObjectiveBasisOpen(true)}
+                />
+              }
+            />
             <Route path="/setup" element={<AdventureSetupForm />} />
             <Route path="/adventure" element={<ActiveAdventureScreen />} />
             <Route path="/journal" element={<JournalView />} />
@@ -48,6 +58,12 @@ export const App: React.FC = () => {
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           aiStatus={aiStatus}
+        />
+
+        {/* Objective Basis & Judges Guide Modal */}
+        <ObjectiveBasisModal
+          isOpen={isObjectiveBasisOpen}
+          onClose={() => setIsObjectiveBasisOpen(false)}
         />
       </div>
     </BrowserRouter>

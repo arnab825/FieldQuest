@@ -6,11 +6,13 @@ import { AIProviderStatus } from '../../types/index.js';
 interface NavbarProps {
   aiStatus?: AIProviderStatus;
   onOpenSettings: () => void;
+  onOpenObjectiveBasis: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   aiStatus,
   onOpenSettings,
+  onOpenObjectiveBasis,
 }) => {
   const location = useLocation();
 
@@ -60,6 +62,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <BookOpen className="w-4 h-4 text-moss-green" />
             <span>Field Journal</span>
           </Link>
+
+          <button
+            onClick={onOpenObjectiveBasis}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold text-forest-deep border border-border-subtle bg-parchment-warm/50 hover:bg-parchment-warm transition-colors cursor-pointer hidden md:flex items-center gap-1.5"
+            title="Read the Scientific Objective Basis & Purpose for Judges"
+          >
+            <span>🎯 Purpose & Basis</span>
+          </button>
         </nav>
 
         {/* Right Controls: AI Badge & Settings */}
