@@ -740,7 +740,7 @@ export const JournalView: React.FC = () => {
                   {/* Specimen Photo or Generate Sketch Option */}
                   {ent.photoUrl ? (
                     <div className="pt-2">
-                      <div className="rounded-xl overflow-hidden border border-border-subtle max-w-lg bg-parchment-warm shadow-xs">
+                      <div className="rounded-2xl overflow-hidden border border-border-subtle w-full bg-parchment-warm shadow-xs">
                         <img
                           src={ent.photoUrl}
                           alt="Observation specimen illustration or photo"
@@ -750,9 +750,9 @@ export const JournalView: React.FC = () => {
                             e.currentTarget.src = fallback.src;
                             updateJournalEntryPhoto(ent.id, fallback.src);
                           }}
-                          className="max-h-80 w-full object-cover"
+                          className="max-h-[460px] w-full object-cover"
                         />
-                        <div className="p-2.5 bg-parchment-warm/95 text-[11px] text-text-muted flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/60">
+                        <div className="p-3 bg-parchment-warm/95 text-[11px] sm:text-xs text-text-muted flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle/60">
                           <div className="flex items-center gap-1.5 font-medium text-forest-deep">
                             <Image className="w-3.5 h-3.5 text-moss-green" />
                             <span>Botanical specimen plate / sketch</span>
