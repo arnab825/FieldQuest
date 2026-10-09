@@ -13,12 +13,14 @@ import {
   Upload,
   Image,
   Feather,
+  Sparkles,
 } from 'lucide-react';
 import {
   getAllAdventures,
   getJournalEntries,
   deleteAdventure,
   deleteJournalEntry,
+  updateJournalEntryPhoto,
   exportAllDataAsJSON,
   importDataFromJSON,
   clearAllLocalData,
@@ -26,6 +28,7 @@ import {
 } from '../../lib/db.js';
 import { AdventureSessionRecord } from '../../types/index.js';
 import { NaturalistNoteView } from '../../components/NaturalistNoteView.js';
+import { generateBotanicalSketch } from '../../lib/sketch-generator.js';
 
 export const JournalView: React.FC = () => {
   const [adventures, setAdventures] = useState<AdventureSessionRecord[]>([]);
@@ -87,6 +90,30 @@ export const JournalView: React.FC = () => {
       await deleteAdventure(id);
       await loadData();
     }
+  };
+
+  const [generatingSketchId, setGeneratingSketchId] = useState<string | null>(null);
+
+  const handleGenerateSketchForEntry = async (entry: JournalEntry) => {
+    try {
+      setGeneratingSketchId(entry.id);
+      const photoDataUrl = await generateBotanicalSketch(
+        entry.notes,
+        entry.missionTitle,
+        entry.environment
+      );
+      await updateJournalEntryPhoto(entry.id, photoDataUrl);
+      await loadData();
+    } catch (err: any) {
+      alert(err.message || 'Failed to generate botanical sketch. Please ensure you are connected to internet.');
+    } finally {
+      setGeneratingSketchId(null);
+    }
+  };
+
+  const handleRemovePhoto = async (id: string) => {
+    await updateJournalEntryPhoto(id, undefined);
+    await loadData();
   };
 
   const handleDeleteEntry = async (id: string) => {
@@ -435,20 +462,56 @@ export const JournalView: React.FC = () => {
                   />
                 </div>
 
-                {/* Optional Specimen Photo */}
-                {ent.photoUrl && (
+                {/* Specimen Photo or Generate Sketch Option */}
+                {ent.photoUrl ? (
                   <div className="pt-2">
                     <div className="rounded-xl overflow-hidden border border-border-subtle max-w-md bg-parchment-warm">
                       <img
                         src={ent.photoUrl}
-                        alt="Observation photo"
+                        alt="Observation specimen illustration or photo"
                         className="max-h-72 w-full object-cover shadow-2xs"
                       />
-                      <div className="p-2 bg-parchment-warm/80 text-[11px] text-text-muted italic flex items-center gap-1.5">
-                        <Image className="w-3.5 h-3.5 text-moss-green" />
-                        <span>Specimen photographic record</span>
+                      <div className="p-2.5 bg-parchment-warm/90 text-[11px] text-text-muted flex items-center justify-between gap-2 border-t border-border-subtle/50">
+                        <div className="flex items-center gap-1.5 italic">
+                          <Image className="w-3.5 h-3.5 text-moss-green" />
+                          <span>Botanical specimen illustration / photo</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled={generatingSketchId === ent.id}
+                            onClick={() => handleGenerateSketchForEntry(ent)}
+                            className="text-forest-deep hover:underline font-semibold cursor-pointer disabled:opacity-50"
+                          >
+                            {generatingSketchId === ent.id ? 'Re-illustrating...' : 'Re-illustrate'}
+                          </button>
+                          <span>•</span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePhoto(ent.id)}
+                            className="text-red-700 hover:underline font-semibold cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                ) : (
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      disabled={generatingSketchId === ent.id}
+                      onClick={() => handleGenerateSketchForEntry(ent)}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep border border-border-subtle text-xs font-semibold transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 text-moss-green ${generatingSketchId === ent.id ? 'animate-spin' : ''}`} />
+                      <span>
+                        {generatingSketchId === ent.id
+                          ? 'Generating vintage botanical study from description...'
+                          : '🎨 Generate Botanical Field Sketch from Description'}
+                      </span>
+                    </button>
                   </div>
                 )}
 

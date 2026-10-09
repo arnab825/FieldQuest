@@ -72,6 +72,14 @@ export async function getJournalEntries(): Promise<JournalEntry[]> {
   return await db.journalEntries.orderBy('timestamp').reverse().toArray();
 }
 
+export async function updateJournalEntryPhoto(id: string, photoUrl: string | undefined): Promise<void> {
+  const entry = await db.journalEntries.get(id);
+  if (entry) {
+    entry.photoUrl = photoUrl;
+    await db.journalEntries.put(entry);
+  }
+}
+
 export async function deleteJournalEntry(id: string): Promise<void> {
   await db.journalEntries.delete(id);
 }

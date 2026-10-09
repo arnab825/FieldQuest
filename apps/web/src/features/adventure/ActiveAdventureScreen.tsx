@@ -22,6 +22,7 @@ import { ScreenDownOverlay } from './ScreenDownOverlay.js';
 import { SessionSummaryModal } from './SessionSummaryModal.js';
 import { addJournalEntry } from '../../lib/db.js';
 import { playSensoryChime } from '../../lib/audio.js';
+import { generateBotanicalSketch } from '../../lib/sketch-generator.js';
 
 export const ActiveAdventureScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ export const ActiveAdventureScreen: React.FC = () => {
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [showReferencePlate, setShowReferencePlate] = useState(false);
   const [referencePlateType, setReferencePlateType] = useState<'venation' | 'bark'>('venation');
+  const [isIllustrating, setIsIllustrating] = useState(false);
 
   // Timer interval
   useEffect(() => {
@@ -150,6 +152,23 @@ export const ActiveAdventureScreen: React.FC = () => {
   const handleAbandon = async () => {
     await abandonSession();
     navigate('/journal');
+  };
+
+  const handleGenerateSketch = async () => {
+    if (!notes || notes.trim().length === 0) return;
+    try {
+      setIsIllustrating(true);
+      const sketchUrl = await generateBotanicalSketch(
+        notes,
+        currentMission.title,
+        session?.environment
+      );
+      setPhotoUrl(sketchUrl);
+    } catch (err: any) {
+      alert('Could not generate sketch: ' + (err.message || 'Please check your internet connection'));
+    } finally {
+      setIsIllustrating(false);
+    }
   };
 
   return (
@@ -474,8 +493,8 @@ export const ActiveAdventureScreen: React.FC = () => {
             ))}
           </div>
 
-          {/* Photo Capture / Select */}
-          <div className="flex items-center gap-3">
+          {/* Photo Capture / Select & Botanical Sketch Generator */}
+          <div className="flex flex-wrap items-center gap-3">
             <label className="px-3.5 py-2 rounded-xl border border-border-subtle bg-parchment-warm hover:bg-paper-white text-forest-deep text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors">
               <Camera className="w-4 h-4 text-moss-green" />
               <span>Select Photo</span>
@@ -487,12 +506,25 @@ export const ActiveAdventureScreen: React.FC = () => {
               />
             </label>
 
+            {!photoUrl && (
+              <button
+                type="button"
+                disabled={isIllustrating || notes.trim().length === 0}
+                onClick={handleGenerateSketch}
+                className="px-3.5 py-2 rounded-xl border border-border-subtle bg-parchment-warm hover:bg-paper-white text-forest-deep text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={notes.trim().length === 0 ? "Type some observation notes first to generate a botanical sketch" : "Illustrate a botanical field sketch from your description"}
+              >
+                <Sparkles className={`w-4 h-4 text-moss-green ${isIllustrating ? 'animate-spin' : ''}`} />
+                <span>{isIllustrating ? 'Illustrating specimen...' : '🎨 Illustrate from Notes'}</span>
+              </button>
+            )}
+
             {photoUrl && (
               <div className="flex items-center gap-2">
                 <img
                   src={photoUrl}
                   alt="Observation thumbnail"
-                  className="w-10 h-10 rounded-lg object-cover border border-border-subtle"
+                  className="w-10 h-10 rounded-lg object-cover border border-border-subtle shadow-2xs"
                 />
                 <button
                   type="button"
