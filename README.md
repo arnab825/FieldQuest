@@ -125,6 +125,52 @@ npm run dev:api
 
 ---
 
+## Running with Podman (Containerized Setup)
+
+FieldQuest provides first-class support for **[Podman](https://podman.io/)** and **[Podman Desktop](https://podman-desktop.io/)** for both local development and production deployments.
+
+### Why We Choose Podman
+- **Rootless & Secure by Default:** Podman containers run without root privileges, protecting your host machine.
+- **Daemonless:** Unlike Docker, Podman does not require a heavy background daemon constantly running or consuming background RAM.
+- **100% Open Source (Apache 2.0):** Completely free with zero commercial licensing costs or enterprise restrictions.
+- **OCI & Compose Compatible:** Drop-in compatibility with standard multi-stage Containerfiles and Compose specifications (`podman-compose.yml` / `docker-compose.yml`).
+- **Kubernetes-Ready:** Native support for generating and running Kubernetes Pod manifests and integrating with Podman Desktop's built-in Kind cluster.
+
+### Setup & Prerequisites Links
+- 📦 **Download Podman Desktop:** [https://podman-desktop.io/](https://podman-desktop.io/)
+- 📖 **Podman Official Documentation:** [https://podman.io/docs](https://podman.io/docs)
+- ⚙️ **Installation Guide (Windows / macOS / Linux):** [https://podman.io/docs/installation](https://podman.io/docs/installation)
+
+### Option 1: Using the Terminal
+From your project directory:
+
+```bash
+# 1. Build the container images
+npm run podman:build
+
+# 2. Start the containers in the background
+npm run podman:up
+
+# 3. View live streaming logs
+npm run podman:logs
+
+# 4. Stop when done
+npm run podman:down
+```
+
+### Option 2: Directly in Podman Desktop UI
+1. Open **[Podman Desktop](https://podman-desktop.io/)**.
+2. Go to the **Containers** or **Pods** view in the sidebar.
+3. Once you launch the stack (`npm run podman:up`), both `fieldquest-web` and `fieldquest-api` will be visible in your Podman Desktop dashboard.
+4. You can inspect live CPU/RAM resource usage, click into real-time container logs, and pause or stop containers with one click.
+
+### Application Endpoints
+- 🌿 **Web PWA:** [http://localhost:5173](http://localhost:5173/)
+- ⚙️ **API Status:** [http://localhost:4000](http://localhost:4000/)
+- 🩺 **API Health Check:** [http://localhost:4000/api/v1/health](http://localhost:4000/api/v1/health)
+
+---
+
 ## Setting Up Real Local AI with Ollama
 
 To use live open-weight model generation:
