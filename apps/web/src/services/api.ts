@@ -89,3 +89,43 @@ export async function requestGenerateMissions(
 
   return res.json();
 }
+
+export interface MissionScaffoldResult {
+  scaffold: string;
+  provider: 'ollama' | 'demo';
+  model: string;
+}
+
+export async function requestMissionScaffold(
+  missionData: {
+    missionTitle: string;
+    objective: string;
+    environment?: string;
+    observationCriteria?: string[];
+    customNotes?: string;
+  },
+  forcedMode?: 'ollama' | 'demo',
+  model?: string,
+  endpoint?: string
+): Promise<MissionScaffoldResult> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/missions/scaffold`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    },
+    body: JSON.stringify({
+      ...missionData,
+      forcedMode,
+      model,
+      endpoint,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Scaffold request failed with status ${res.status}`);
+  }
+
+  return res.json();
+}
+

@@ -16,10 +16,12 @@ import {
   Image,
   BookOpen,
   Feather,
+  Palette,
 } from 'lucide-react';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 import { ScreenDownOverlay } from './ScreenDownOverlay.js';
 import { SessionSummaryModal } from './SessionSummaryModal.js';
+import { CustomIllustratorModal } from './CustomIllustratorModal.js';
 import { addJournalEntry } from '../../lib/db.js';
 import { playSensoryChime } from '../../lib/audio.js';
 import {
@@ -27,6 +29,7 @@ import {
   getMatchingBotanicalPlate,
   BOTANICAL_FIELD_PLATES,
 } from '../../lib/sketch-generator.js';
+import { requestMissionScaffold } from '../../services/api.js';
 import { NatureMission } from '../../types/index.js';
 
 interface MissionPromptChip {
@@ -191,6 +194,9 @@ export const ActiveAdventureScreen: React.FC = () => {
   const [showReferencePlate, setShowReferencePlate] = useState(false);
   const [referencePlateId, setReferencePlateId] = useState<string>(BOTANICAL_FIELD_PLATES[0].id);
   const [isIllustrating, setIsIllustrating] = useState(false);
+  const [isScaffolding, setIsScaffolding] = useState(false);
+  const [scaffoldModelUsed, setScaffoldModelUsed] = useState<string | null>(null);
+  const [showCustomIllustrator, setShowCustomIllustrator] = useState(false);
 
   // Timer interval
   useEffect(() => {
@@ -319,6 +325,52 @@ export const ActiveAdventureScreen: React.FC = () => {
     }
   };
 
+  const handleInsertScaffold = async () => {
+    if (!session || !currentMission) return;
+    setIsScaffolding(true);
+    setScaffoldModelUsed(null);
+    try {
+      const mode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'ollama';
+      const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || undefined;
+      const model = localStorage.getItem('fieldquest_ollama_model') || undefined;
+
+      const result = await requestMissionScaffold(
+        {
+          missionTitle: currentMission.title,
+          objective: currentMission.objective,
+          environment: session.environment,
+          observationCriteria: currentMission.observationCriteria,
+          customNotes: notes,
+        },
+        mode,
+        model,
+        endpoint
+      );
+
+      if (result?.scaffold) {
+        setScaffoldModelUsed(result.model);
+        setNotes((prev) => {
+          const trimmed = prev.trim();
+          const updated = trimmed ? `${trimmed}\n\n${result.scaffold}` : result.scaffold;
+          updateCurrentMissionDraft(updated, photoUrl);
+          return updated;
+        });
+      }
+    } catch (err) {
+      console.warn('AI scaffold request failed, using structured template fallback:', err);
+      const fallback = buildMissionScaffold(currentMission);
+      setScaffoldModelUsed('curated-naturalist-engine');
+      setNotes((prev) => {
+        const trimmed = prev.trim();
+        const updated = trimmed ? `${trimmed}\n\n${fallback}` : fallback;
+        updateCurrentMissionDraft(updated, photoUrl);
+        return updated;
+      });
+    } finally {
+      setIsScaffolding(false);
+    }
+  };
+
   const activePlate =
     BOTANICAL_FIELD_PLATES.find(p => p.id === referencePlateId) ||
     BOTANICAL_FIELD_PLATES[0];
@@ -419,6 +471,39 @@ export const ActiveAdventureScreen: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Custom AI Botanical Illustrator Modal */}
+      {showCustomIllustrator && currentMission && (
+        <CustomIllustratorModal
+          isOpen={showCustomIllustrator}
+          onClose={() => setShowCustomIllustrator(false)}
+          missionTitle={currentMission.title}
+          missionObjective={currentMission.objective}
+          currentNotes={notes}
+          environment={session.environment}
+          onSelectIllustration={(imageUrl) => {
+            setPhotoUrl(imageUrl);
+            updateCurrentMissionDraft(notes, imageUrl);
+            if (session) {
+              addJournalEntry({
+                id: `journal-obs-${currentMission.id}`,
+                adventureId: session.id,
+                missionId: currentMission.id,
+                missionTitle: currentMission.title,
+                timestamp: new Date().toISOString(),
+                notes: notes || '',
+                photoUrl: imageUrl,
+                tags: [session.environment, ...session.interests],
+                environment: session.environment,
+              });
+            }
+          }}
+          onSetAsReferencePlate={(plateUrl) => {
+            setPhotoUrl(plateUrl);
+            updateCurrentMissionDraft(notes, plateUrl);
+          }}
+        />
       )}
 
       {/* Top Session Status Bar */}
@@ -588,19 +673,30 @@ export const ActiveAdventureScreen: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReferencePlateId(activePlate.id);
-                    setShowReferencePlate(true);
-                  }}
-                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 self-start sm:self-auto shrink-0 cursor-pointer shadow-xs whitespace-nowrap"
-                >
-                  <Image className="w-3.5 h-3.5 text-leaf-accent" />
-                  <span>Study {activePlate.plateNumber}</span>
-                </button>
-              </div>
-            </div>
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowCustomIllustrator(true)}
+                        className="px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                        title="Customize and synthesize botanical plates with Pollinations Flux AI"
+                      >
+                        <Palette className="w-3.5 h-3.5 text-moss-green" />
+                        <span>🎨 Custom AI Plate</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReferencePlateId(activePlate.id);
+                          setShowReferencePlate(true);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                      >
+                        <Image className="w-3.5 h-3.5 text-leaf-accent" />
+                        <span>Study {activePlate.plateNumber}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
 
             {/* Safety Guidance Callout */}
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-3">
@@ -635,23 +731,22 @@ export const ActiveAdventureScreen: React.FC = () => {
                   <Feather className="w-4 h-4 text-moss-green" />
                   <span>Naturalist Field Log & Observation Notes</span>
                 </h2>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {scaffoldModelUsed && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center gap-1">
+                      <span>✓ AI Scaffold:</span>
+                      <span className="font-mono">{scaffoldModelUsed}</span>
+                    </span>
+                  )}
                   <button
                     type="button"
-                    onClick={() => {
-                      const scaffold = buildMissionScaffold(currentMission);
-                      setNotes(prev => {
-                        const trimmed = prev.trim();
-                        const updated = trimmed ? `${trimmed}\n\n${scaffold}` : scaffold;
-                        updateCurrentMissionDraft(updated, photoUrl);
-                        return updated;
-                      });
-                    }}
-                    className="text-[11px] font-semibold text-forest-deep bg-forest-deep/10 hover:bg-forest-deep/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
-                    title="Insert structured observation criteria for this mission"
+                    disabled={isScaffolding}
+                    onClick={handleInsertScaffold}
+                    className="text-[11px] font-semibold text-forest-deep bg-forest-deep/10 hover:bg-forest-deep/20 px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                    title="Generate tailored observation criteria using the current AI model"
                   >
-                    <Sparkles className="w-3 h-3 text-moss-green" />
-                    <span>🪄 Insert Mission Scaffold</span>
+                    <Sparkles className={`w-3 h-3 text-moss-green ${isScaffolding ? 'animate-spin' : ''}`} />
+                    <span>{isScaffolding ? 'Generating AI Scaffold...' : '🪄 Insert Mission Scaffold'}</span>
                   </button>
                   <span className="text-[11px] text-text-muted">
                     {notes.split(/\s+/).filter(Boolean).length} words
@@ -707,7 +802,7 @@ export const ActiveAdventureScreen: React.FC = () => {
               </div>
 
           {/* Photo Capture / Select & Botanical Sketch Generator */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <label className="px-3.5 py-2 rounded-xl border border-border-subtle bg-parchment-warm hover:bg-paper-white text-forest-deep text-xs font-medium flex items-center gap-2 cursor-pointer transition-colors">
               <Camera className="w-4 h-4 text-moss-green" />
               <span>Select Photo</span>
@@ -719,6 +814,16 @@ export const ActiveAdventureScreen: React.FC = () => {
               />
             </label>
 
+            <button
+              type="button"
+              onClick={() => setShowCustomIllustrator(true)}
+              className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs"
+              title="Open AI Botanical Illustrator to customize specimen prompt & styles"
+            >
+              <Palette className="w-4 h-4 text-moss-green" />
+              <span>🎨 Custom AI Illustrator</span>
+            </button>
+
             {!photoUrl && (
               <button
                 type="button"
@@ -728,7 +833,7 @@ export const ActiveAdventureScreen: React.FC = () => {
                 title={notes.trim().length === 0 ? "Type some observation notes first to generate a botanical sketch" : "Illustrate a botanical field sketch from your description"}
               >
                 <Sparkles className={`w-4 h-4 text-moss-green ${isIllustrating ? 'animate-spin' : ''}`} />
-                <span>{isIllustrating ? 'Illustrating specimen...' : '🎨 Illustrate from Notes'}</span>
+                <span>{isIllustrating ? 'Illustrating specimen...' : '✨ Quick Sketch'}</span>
               </button>
             )}
 

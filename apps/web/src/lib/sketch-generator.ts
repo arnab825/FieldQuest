@@ -376,15 +376,15 @@ export async function generateBotanicalSketch(
 
   const combined = `${title || ''} ${environment || ''} ${cleanText}`.toLowerCase();
 
-  // 1. Try Pollinations AI with fast timeout
+  // 1. Try Pollinations AI with Flux model
   try {
     const subject = cleanText || title || matchedPlate.title;
     const prompt = `vintage botanical watercolor specimen of ${subject}, antique naturalist scientific plate on aged parchment, botanical morphology study, elegant flora art, detailed biological illustration`;
     const seed = Math.floor(Math.random() * 899999) + 100000;
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=576&nologo=true&seed=${seed}`;
+    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=800&height=600&nologo=true&seed=${seed}`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
+    const timer = setTimeout(() => controller.abort(), 12000);
     const res = await fetch(pollUrl, { signal: controller.signal });
     clearTimeout(timer);
 
@@ -400,7 +400,7 @@ export async function generateBotanicalSketch(
       }
     }
   } catch {
-    // Pollinations AI unavailable or paywalled; seamlessly proceed to open historical botanical archive
+    // Pollinations AI unavailable or slow; proceed to open historical botanical archive
   }
 
   // 2. Query open naturalist botanical archive
@@ -480,4 +480,152 @@ export async function generateBotanicalSketch(
   }
 
   return matchedPlate.src;
+}
+
+export type BotanicalStyleKey =
+  | 'vintage_plate'
+  | 'microscopic'
+  | 'herbarium'
+  | 'journal_sketch'
+  | 'copperplate'
+  | 'custom';
+
+export interface BotanicalStyleOption {
+  key: BotanicalStyleKey;
+  label: string;
+  icon: string;
+  description: string;
+  promptSuffix: string;
+}
+
+export const BOTANICAL_STYLE_PRESETS: BotanicalStyleOption[] = [
+  {
+    key: 'vintage_plate',
+    label: 'Vintage Naturalist Plate',
+    icon: '📜',
+    description: 'Aged parchment, Linnaean Latin taxonomy, copperplate watercolor engraving',
+    promptSuffix:
+      'vintage botanical watercolor specimen, antique naturalist scientific plate on aged parchment, botanical morphology study, elegant flora art, detailed biological illustration, scientific plate taxonomy labels',
+  },
+  {
+    key: 'microscopic',
+    label: 'Microscopic & Venation Anatomy',
+    icon: '🔬',
+    description: 'Vascular bundles, cellular stomata, translucent venation, botanical slide',
+    promptSuffix:
+      'botanical microscopic cellular anatomy illustration, high detail botanical cross section, translucent plant cells, leaf stomata and vascular bundles, illuminated science microscopy plate',
+  },
+  {
+    key: 'herbarium',
+    label: 'Pressed Herbarium Specimen',
+    icon: '🌿',
+    description: 'Dried mounted plant specimen on archival paper with museum catalog tag',
+    promptSuffix:
+      'pressed botanical herbarium specimen study, mounted on archival cream herbarium paper, dried plant taxonomy sheet, Linnaean specimen label, botanical museum archive',
+  },
+  {
+    key: 'journal_sketch',
+    label: 'Naturalist Journal Sketch',
+    icon: '🎨',
+    description: 'Field notes in ink, delicate sepia and moss green watercolor wash',
+    promptSuffix:
+      'field naturalist journal entry sketch, handwritten field observation notes, delicate sepia and moss green watercolor wash, authentic pen and ink naturalist field study',
+  },
+  {
+    key: 'copperplate',
+    label: 'Fine Copperplate Engraving',
+    icon: '🖋️',
+    description: 'Intricate monochrome lithograph, fine crosshatching on vintage paper',
+    promptSuffix:
+      'antique copperplate line engraving, monochrome fine crosshatching, botanical lithograph, aged vintage paper, classical 18th-century naturalist folio',
+  },
+  {
+    key: 'custom',
+    label: 'Custom Explorer Prompt',
+    icon: '✨',
+    description: 'Your own crafted AI prompt for full creative naturalist freedom',
+    promptSuffix: '',
+  },
+];
+
+export interface CustomIllustrationRequest {
+  subject: string;
+  styleKey: BotanicalStyleKey;
+  customPrompt?: string;
+  seed?: number;
+  width?: number;
+  height?: number;
+  model?: 'flux' | 'turbo';
+}
+
+export interface CustomIllustrationResult {
+  url: string;
+  promptUsed: string;
+  seed: number;
+  model: string;
+  isBase64: boolean;
+}
+
+export function buildCustomPrompt(
+  subject: string,
+  styleKey: BotanicalStyleKey,
+  customPrompt?: string
+): string {
+  if (styleKey === 'custom' && customPrompt && customPrompt.trim().length > 0) {
+    return customPrompt.trim();
+  }
+  const preset = BOTANICAL_STYLE_PRESETS.find((p) => p.key === styleKey) || BOTANICAL_STYLE_PRESETS[0];
+  const cleanSubj = subject.trim() || 'botanical specimen';
+  return `${cleanSubj}, ${preset.promptSuffix}`;
+}
+
+export async function generateCustomBotanicalIllustration(
+  request: CustomIllustrationRequest
+): Promise<CustomIllustrationResult> {
+  const seed = request.seed || Math.floor(Math.random() * 899999) + 100000;
+  const width = request.width || 800;
+  const height = request.height || 600;
+  const model = request.model || 'flux';
+  const prompt = buildCustomPrompt(request.subject, request.styleKey, request.customPrompt);
+
+  const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
+    prompt
+  )}?model=${model}&width=${width}&height=${height}&nologo=true&seed=${seed}`;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 16000);
+    const res = await fetch(pollUrl, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
+      const blob = await res.blob();
+      if (blob.size > 2000) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || pollUrl);
+          reader.onerror = () => resolve(pollUrl);
+          reader.readAsDataURL(blob);
+        });
+        return {
+          url: base64,
+          promptUsed: prompt,
+          seed,
+          model,
+          isBase64: true,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[FieldQuest AI] Custom illustration fetch error:', err);
+  }
+
+  // If conversion failed or network timed out, return direct Pollinations URL so browser can still render it
+  return {
+    url: pollUrl,
+    promptUsed: prompt,
+    seed,
+    model,
+    isBase64: false,
+  };
 }

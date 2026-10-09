@@ -106,6 +106,81 @@ export class MissionGeneratorService {
       missions: sanitizedMissions,
     };
   }
+
+  async generateMissionScaffold(
+    missionData: {
+      missionTitle: string;
+      objective: string;
+      observationCriteria: string[];
+      environment?: string;
+      customNotes?: string;
+    },
+    forcedMode?: 'ollama' | 'demo',
+    model?: string,
+    endpoint?: string
+  ): Promise<{ scaffold: string; provider: string; model: string }> {
+    const provider = this.getProvider(forcedMode);
+
+    if (provider.providerId === 'ollama') {
+      try {
+        const activeEndpoint = endpoint || config.ollamaBaseUrl;
+        const activeModel = model || config.ollamaModel;
+
+        const systemPrompt = `You are an expert field naturalist and botanical mentor.
+Generate an insightful, concise, and structured field observation scaffold for an explorer.
+Format with clean bullet points and diagnostic prompts guiding what to observe in the field.
+Keep the output under 150 words. Do NOT include markdown code blocks or conversational text.`;
+
+        const userPrompt = `Mission: ${missionData.missionTitle}
+Objective: ${missionData.objective}
+Environment: ${missionData.environment || 'outdoors'}
+Criteria to observe: ${(missionData.observationCriteria || []).join(', ')}
+${missionData.customNotes ? `Explorer notes: "${missionData.customNotes}"` : ''}
+
+Generate a structured naturalist observation guide with diagnostic cues for each criterion.`;
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 20000);
+
+        const res = await fetch(`${activeEndpoint}/api/generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: activeModel,
+            system: systemPrompt,
+            prompt: userPrompt,
+            stream: false,
+            options: { temperature: 0.3 }
+          }),
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+
+        if (res.ok) {
+          const data = await res.json() as { response?: string };
+          if (data?.response && data.response.trim().length > 20) {
+            return {
+              scaffold: data.response.trim(),
+              provider: 'ollama',
+              model: activeModel
+            };
+          }
+        }
+      } catch (err) {
+        console.warn('[FieldQuest AI] Ollama scaffold generation error, falling back to curated scaffold:', err);
+      }
+    }
+
+    // High quality deterministic naturalist fallback scaffold:
+    const criteriaItems = (missionData.observationCriteria || []).map(c => `• ${c}: `).join('\n');
+    const fallbackScaffold = `[Field Observation Guide • ${missionData.missionTitle}]\n${criteriaItems}\n• Micro-habitat & Setting: \n• Key Diagnostic Features: \n• Naturalist Reflection: `;
+
+    return {
+      scaffold: fallbackScaffold,
+      provider: 'demo',
+      model: 'curated-naturalist-engine-v1'
+    };
+  }
 }
 
 export const missionGeneratorService = new MissionGeneratorService();
