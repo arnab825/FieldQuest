@@ -376,11 +376,11 @@ export const FieldStudioView: React.FC = () => {
                   Prompt: <span className="font-medium text-forest-deep">"{result.promptUsed}"</span>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={handleDownload}
-                    className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                   >
                     <Download className="w-3.5 h-3.5 text-moss-green" />
                     <span>Download PNG</span>
@@ -390,7 +390,7 @@ export const FieldStudioView: React.FC = () => {
                     type="button"
                     onClick={handleSaveToJournal}
                     disabled={savedSuccess}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
                       savedSuccess
                         ? 'bg-moss-green text-paper-white'
                         : 'bg-forest-deep text-paper-white hover:bg-forest-dark'
@@ -403,20 +403,69 @@ export const FieldStudioView: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Specimen Field Diagnostics & Study Sheet (Fills layout gap with valuable scientific analysis) */}
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-6 shadow-xs space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 border-b border-border-subtle pb-3">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-moss-green shrink-0" />
+                <span className="font-editorial text-sm font-bold text-forest-deep">
+                  Morphological & Diagnostic Identification Keys
+                </span>
+              </div>
+              <span className="text-[10px] font-bold text-moss-green bg-forest-deep/10 px-2.5 py-0.5 rounded-full uppercase tracking-wider self-start sm:self-auto">
+                Folio #{seed.toString().slice(-4)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-parchment-warm/70 border border-border-subtle/80 space-y-1">
+                <span className="font-bold text-forest-deep block text-[11px] flex items-center gap-1.5">
+                  <Leaf className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                  <span>Morphological Key</span>
+                </span>
+                <p className="text-text-muted text-[11px] leading-relaxed">
+                  {result
+                    ? `Observed ${subject.toLowerCase()} structural venation & adaptations.`
+                    : 'Select any plant or specimen to view diagnostic anatomical criteria.'}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-parchment-warm/70 border border-border-subtle/80 space-y-1">
+                <span className="font-bold text-forest-deep block text-[11px] flex items-center gap-1.5">
+                  <Scroll className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                  <span>Historical Medium</span>
+                </span>
+                <p className="text-text-muted text-[11px] leading-relaxed">
+                  {BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey)?.label || 'Naturalist Lithograph'}: {BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey)?.description.slice(0, 65) || 'scientific lithography'}...
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-parchment-warm/70 border border-border-subtle/80 space-y-1">
+                <span className="font-bold text-forest-deep block text-[11px] flex items-center gap-1.5">
+                  <Compass className="w-3.5 h-3.5 text-leaf-accent shrink-0" />
+                  <span>Specimen Archival</span>
+                </span>
+                <p className="text-text-muted text-[11px] leading-relaxed">
+                  {aspect === 'landscape' ? '800 × 600' : '768 × 768'} resolution study saved locally to IndexedDB.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Gallery of Archived Studio Sketches */}
       {archivedSketches.length > 0 && (
         <div className="space-y-4 pt-4 border-t border-border-subtle">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-moss-green" />
-              <h3 className="font-editorial text-xl font-bold text-forest-deep">
+              <Layers className="w-4 h-4 text-moss-green shrink-0" />
+              <h3 className="font-editorial text-lg sm:text-xl font-bold text-forest-deep">
                 Archived Specimen Studies ({archivedSketches.length})
               </h3>
             </div>
-            <span className="text-xs text-text-muted">
+            <span className="text-[11px] sm:text-xs text-text-muted">
               Artwork stored securely in your browser's IndexedDB
             </span>
           </div>
@@ -521,7 +570,7 @@ export const FieldStudioView: React.FC = () => {
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-border-subtle/60 flex items-center justify-between">
+              <div className="pt-2 border-t border-border-subtle/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <button
                   type="button"
                   onClick={() => {
