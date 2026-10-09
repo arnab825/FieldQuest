@@ -46,7 +46,7 @@ export const Footer: React.FC = () => {
               Open-Weight AI
             </h4>
             <p className="text-[11px] leading-relaxed">
-              Designed for local Ollama inference (<code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep">qwen3:4b</code>) with deterministic curated fallback.
+              Designed for local Ollama inference (<code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep">qwen2.5:3b</code>) with deterministic curated fallback.
             </p>
             <p className="text-[11px] text-forest-deep/80">
               Licensed under MIT License.

@@ -44,7 +44,12 @@ export const AdventureSetupForm: React.FC = () => {
   // Query AI Status
   const { data: aiStatus, refetch: refetchAIStatus } = useQuery<AIProviderStatus>({
     queryKey: ['aiStatus', forcedDemoMode ? 'demo' : 'ollama'],
-    queryFn: () => fetchAIStatus(forcedDemoMode ? 'demo' : 'ollama'),
+    queryFn: () => {
+      const mode = forcedDemoMode ? 'demo' : (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'ollama';
+      const model = localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
+      const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
+      return fetchAIStatus(mode, model, endpoint);
+    },
     staleTime: 15000,
   });
 
@@ -53,7 +58,9 @@ export const AdventureSetupForm: React.FC = () => {
     mutationFn: (prefs: AdventurePreferences) => {
       const savedMode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'demo';
       const activeMode = forcedDemoMode ? 'demo' : savedMode;
-      return requestGenerateMissions(prefs, activeMode);
+      const model = localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
+      const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
+      return requestGenerateMissions(prefs, activeMode, model, endpoint);
     },
     onSuccess: async (data) => {
       await startSession({
@@ -316,18 +323,55 @@ export const AdventureSetupForm: React.FC = () => {
           </div>
 
           {/* Optional Custom Focus */}
-          <div>
-            <label className="block text-xs font-medium text-text-muted mb-1">
-              Custom observation focus (optional):
-            </label>
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-bold text-forest-deep">
+                Custom observation focus (tailor missions to a specific topic):
+              </label>
+              {customFocus && (
+                <button
+                  type="button"
+                  onClick={() => setCustomFocus('')}
+                  className="text-[11px] text-text-muted hover:text-red-700 cursor-pointer"
+                >
+                  Clear focus
+                </button>
+              )}
+            </div>
             <input
               type="text"
               value={customFocus}
               onChange={e => setCustomFocus(e.target.value)}
-              placeholder="e.g. Look for moss on brick walls or listening near water"
-              className="w-full px-3.5 py-2 text-xs rounded-xl border border-border-subtle bg-paper-white focus:outline-none focus:border-forest-deep"
-              maxLength={100}
+              placeholder="e.g. Look for bilateral leaf symmetry, moss on brick walls, or audio sound layering"
+              className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-border-subtle bg-paper-white focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10 font-medium"
+              maxLength={120}
             />
+
+            {/* Quick customization chips */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[11px] text-text-muted font-medium mr-1">Quick focus suggestions:</span>
+              {[
+                { label: '🌿 Leaf Venation & Symmetry', value: 'Bilateral leaf symmetry and venation patterns' },
+                { label: '🍃 Margins & Surface', value: 'Leaf margin serration, cuticle waxiness, and trichomes' },
+                { label: '👂 3D Audio Soundscape', value: 'Canopy bioacoustics and layered environmental sounds' },
+                { label: '🌲 Tree Bark & Lichen', value: 'Corticolous lichens and furrowed tree bark textures' },
+                { label: '🧱 Urban Pavement Flora', value: 'Pioneer vegetation in sidewalk cracks and brick mortar' },
+                { label: '🐦 Avian Behavior', value: 'Bird perch selection, flight paths, and territorial calls' },
+              ].map(chip => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => setCustomFocus(chip.value)}
+                  className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                    customFocus === chip.value
+                      ? 'bg-forest-deep text-paper-white border-forest-deep shadow-xs font-semibold'
+                      : 'bg-parchment-warm/70 hover:bg-forest-deep/10 text-forest-deep border-border-subtle'
+                  }`}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 

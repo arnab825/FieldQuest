@@ -14,12 +14,13 @@ interface AdventureSessionState {
   tickSecond: () => void;
   togglePause: () => void;
   setScreenDown: (enabled: boolean) => void;
-  goToMission: (index: number) => void;
+  updateCurrentMissionDraft: (notes?: string, photoUrl?: string) => void;
+  goToMission: (index: number, currentDraftNotes?: string, currentDraftPhoto?: string) => void;
   completeCurrentMission: (notes?: string, photoUrl?: string) => Promise<void>;
   skipCurrentMission: () => Promise<void>;
   abandonSession: () => Promise<void>;
   finishSession: (overallReflection?: string) => Promise<void>;
-  restoreSession: (session: AdventureSessionRecord) => void;
+  restoreSession: (session: AdventureSessionRecord) => Promise<void>;
 }
 
 export const useAdventureSessionStore = create<AdventureSessionState>((set, get) => ({
@@ -70,10 +71,30 @@ export const useAdventureSessionStore = create<AdventureSessionState>((set, get)
     set({ isScreenDown: enabled });
   },
 
-  goToMission: (index: number) => {
-    const { session } = get();
+  updateCurrentMissionDraft: (notes?: string, photoUrl?: string) => {
+    const { session, currentMissionIndex } = get();
+    if (!session || !session.missions[currentMissionIndex]) return;
+    const newMissions = [...session.missions];
+    newMissions[currentMissionIndex] = {
+      ...newMissions[currentMissionIndex],
+      userNotes: notes !== undefined ? notes : newMissions[currentMissionIndex].userNotes,
+      userPhotoUrl: photoUrl !== undefined ? photoUrl : newMissions[currentMissionIndex].userPhotoUrl,
+    };
+    set({ session: { ...session, missions: newMissions } });
+  },
+
+  goToMission: (index: number, currentDraftNotes?: string, currentDraftPhoto?: string) => {
+    const { session, currentMissionIndex } = get();
     if (!session || index < 0 || index >= session.missions.length) return;
-    set({ currentMissionIndex: index });
+    const newMissions = [...session.missions];
+    if (newMissions[currentMissionIndex]) {
+      newMissions[currentMissionIndex] = {
+        ...newMissions[currentMissionIndex],
+        userNotes: currentDraftNotes !== undefined ? currentDraftNotes : newMissions[currentMissionIndex].userNotes,
+        userPhotoUrl: currentDraftPhoto !== undefined ? currentDraftPhoto : newMissions[currentMissionIndex].userPhotoUrl,
+      };
+    }
+    set({ session: { ...session, missions: newMissions }, currentMissionIndex: index });
   },
 
   completeCurrentMission: async (notes?: string, photoUrl?: string) => {
@@ -184,13 +205,31 @@ export const useAdventureSessionStore = create<AdventureSessionState>((set, get)
     await saveAdventureSession(finishedSession);
   },
 
-  restoreSession: (session: AdventureSessionRecord) => {
+  restoreSession: async (session: AdventureSessionRecord) => {
+    // Find the first active or pending mission to resume smoothly
+    const activeIdx = session.missions.findIndex(m => m.status === 'active');
+    const pendingIdx = session.missions.findIndex(m => m.status === 'pending');
+    const targetIdx = activeIdx >= 0 ? activeIdx : (pendingIdx >= 0 ? pendingIdx : 0);
+
+    const updatedMissions = session.missions.map((m, idx) => ({
+      ...m,
+      status: idx === targetIdx && m.status !== 'completed' ? ('active' as const) : m.status,
+    }));
+
+    const resumedSession: AdventureSessionRecord = {
+      ...session,
+      missions: updatedMissions,
+      status: 'in_progress',
+    };
+
     set({
-      session,
-      currentMissionIndex: 0,
-      elapsedSeconds: session.totalMinutesSpent * 60,
-      isPaused: true,
+      session: resumedSession,
+      currentMissionIndex: targetIdx,
+      elapsedSeconds: (session.totalMinutesSpent || 0) * 60,
+      isPaused: false,
       isScreenDown: false,
     });
+
+    await saveAdventureSession(resumedSession);
   },
 }));

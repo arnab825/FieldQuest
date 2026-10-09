@@ -13,19 +13,29 @@ export class AIProviderError extends Error {
 
 export class OllamaMissionProvider implements AIMissionProvider {
   readonly providerId = 'ollama' as const;
+  public baseUrl: string;
+  public modelId: string;
+  public timeoutMs: number;
 
   constructor(
-    private readonly baseUrl: string = 'http://localhost:11434',
-    readonly modelId: string = 'qwen3:4b',
-    private readonly timeoutMs: number = 45000
-  ) {}
+    baseUrl: string = 'http://localhost:11434',
+    modelId: string = 'qwen2.5:3b',
+    timeoutMs: number = 45000
+  ) {
+    this.baseUrl = baseUrl;
+    this.modelId = modelId;
+    this.timeoutMs = timeoutMs;
+  }
 
-  async checkAvailability(): Promise<ProviderAvailability> {
+  async checkAvailability(requestedModel?: string, customEndpoint?: string): Promise<ProviderAvailability> {
+    const targetEndpoint = customEndpoint || this.baseUrl;
+    const targetModel = (requestedModel && requestedModel.trim()) || this.modelId;
+
     try {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 3500);
 
-      const res = await fetch(`${this.baseUrl}/api/tags`, {
+      const res = await fetch(`${targetEndpoint}/api/tags`, {
         signal: controller.signal,
         headers: { 'Accept': 'application/json' }
       });
@@ -36,8 +46,8 @@ export class OllamaMissionProvider implements AIMissionProvider {
           available: false,
           status: 'unavailable',
           provider: 'ollama',
-          model: this.modelId,
-          endpoint: this.baseUrl,
+          model: targetModel,
+          endpoint: targetEndpoint,
           message: `Ollama returned HTTP ${res.status}`,
           error: `HTTP ${res.status}`
         };
@@ -45,33 +55,75 @@ export class OllamaMissionProvider implements AIMissionProvider {
 
       const data = await res.json() as { models?: Array<{ name: string }> };
       const models = data.models || [];
-      const hasConfiguredModel = models.some(m => m.name === this.modelId || m.name.startsWith(this.modelId.split(':')[0]));
+      const installedNames = models.map(m => m.name);
+
+      // 1. Check if target model matches installed model (exact or prefix, e.g. "qwen2.5:3b" matches "qwen2.5:3b:latest" or "qwen2.5:3b")
+      const matched = models.find(m =>
+        m.name === targetModel ||
+        m.name.startsWith(targetModel.split(':')[0]) ||
+        targetModel.startsWith(m.name.split(':')[0])
+      );
+
+      if (matched) {
+        this.modelId = matched.name;
+        this.baseUrl = targetEndpoint;
+        return {
+          available: true,
+          status: 'available',
+          provider: 'ollama',
+          model: matched.name,
+          endpoint: targetEndpoint,
+          installedModels: installedNames,
+          message: `Ollama is ready and synchronized with model "${matched.name}".`
+        };
+      }
+
+      // 2. If the user has any installed models in Ollama, automatically sync to the first installed model!
+      if (models.length > 0) {
+        const autoSyncedModel = models[0].name;
+        this.modelId = autoSyncedModel;
+        this.baseUrl = targetEndpoint;
+        return {
+          available: true,
+          status: 'available',
+          provider: 'ollama',
+          model: autoSyncedModel,
+          endpoint: targetEndpoint,
+          installedModels: installedNames,
+          message: `Ollama is ready! Synchronized with installed model "${autoSyncedModel}".`
+        };
+      }
 
       return {
         available: true,
         status: 'available',
         provider: 'ollama',
-        model: this.modelId,
-        endpoint: this.baseUrl,
-        installedModels: models.map(m => m.name),
-        message: hasConfiguredModel
-          ? `Ollama is ready with model ${this.modelId}`
-          : `Ollama is reachable, but model "${this.modelId}" may need to be pulled (run "ollama pull ${this.modelId}").`
+        model: targetModel,
+        endpoint: targetEndpoint,
+        installedModels: [],
+        message: `Ollama is reachable, but model "${targetModel}" may need to be pulled (run "ollama pull ${targetModel}").`
       };
     } catch (err: any) {
       return {
         available: false,
         status: 'unavailable',
         provider: 'ollama',
-        model: this.modelId,
-        endpoint: this.baseUrl,
-        message: `Local Ollama is unreachable at ${this.baseUrl}. Switch to Demo Mode or launch Ollama.`,
+        model: targetModel,
+        endpoint: targetEndpoint,
+        message: `Local Ollama is unreachable at ${targetEndpoint}. Switch to Demo Mode or launch Ollama.`,
         error: err.message || 'Connection failed'
       };
     }
   }
 
-  async generateMissions(preferences: AdventurePreferences): Promise<NatureMission[]> {
+  async generateMissions(
+    preferences: AdventurePreferences,
+    overrideModel?: string,
+    overrideEndpoint?: string
+  ): Promise<NatureMission[]> {
+    const activeModel = overrideModel || this.modelId;
+    const activeEndpoint = overrideEndpoint || this.baseUrl;
+
     const systemPrompt = buildSystemPrompt(preferences);
     const userPrompt = buildUserPrompt(preferences);
 
@@ -80,7 +132,7 @@ export class OllamaMissionProvider implements AIMissionProvider {
 
     let rawResponseText = '';
     try {
-      const response = await fetch(`${this.baseUrl}/api/generate`, {
+      const response = await fetch(`${activeEndpoint}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +140,7 @@ export class OllamaMissionProvider implements AIMissionProvider {
         },
         signal: controller.signal,
         body: JSON.stringify({
-          model: this.modelId,
+          model: activeModel,
           system: systemPrompt,
           prompt: userPrompt,
           stream: false,

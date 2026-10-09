@@ -112,7 +112,7 @@ export const ObjectiveBasisModal: React.FC<ObjectiveBasisModalProps> = ({
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                <span><strong>Local & Sovereign AI:</strong> Powered by Ollama running open-weight <code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep font-mono">qwen3:4b</code> or Google Gemma. No user prompts or journals are transmitted to commercial cloud AI vendors.</span>
+                <span><strong>Local & Sovereign AI:</strong> Powered by Ollama running open-weight <code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep font-mono">qwen2.5:3b</code> or Google Gemma. No user prompts or journals are transmitted to commercial cloud AI vendors.</span>
               </li>
               <li className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
@@ -133,7 +133,7 @@ export const ObjectiveBasisModal: React.FC<ObjectiveBasisModalProps> = ({
             </h3>
             <div className="space-y-1.5 text-xs text-forest-deep/80">
               <p>• <strong>Immediate Demo Mode:</strong> Test full adventure flows instantly without setting up local GPU daemons.</p>
-              <p>• <strong>Real Local AI:</strong> Spin up Ollama with <code className="font-mono text-forest-deep">qwen3:4b</code> to observe real inference with strict Zod parsing.</p>
+              <p>• <strong>Real Local AI:</strong> Spin up Ollama with <code className="font-mono text-forest-deep">qwen2.5:3b</code> to observe real inference with strict Zod parsing.</p>
               <p>• <strong>Safety Protocols:</strong> Prompts enforce leave-no-trace ethics and prohibit consuming wild flora or touching wildlife.</p>
               <p>• <strong>PWA Readiness:</strong> Service workers cache static assets for offline capability.</p>
             </div>

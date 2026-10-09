@@ -17,24 +17,51 @@ export async function fetchHealth(): Promise<{ status: string; service: string }
   return res.json();
 }
 
-export async function fetchAIStatus(mode?: 'demo' | 'ollama'): Promise<AIProviderStatus> {
-  const query = mode ? `?mode=${mode}` : '';
+export async function fetchAIStatus(
+  mode?: 'demo' | 'ollama',
+  model?: string,
+  endpoint?: string
+): Promise<AIProviderStatus> {
+  const params = new URLSearchParams();
+  if (mode) params.set('mode', mode);
+  if (model) params.set('model', model);
+  if (endpoint) params.set('endpoint', endpoint);
+  const query = params.toString() ? `?${params.toString()}` : '';
+
   const res = await fetch(`${API_BASE_URL}/api/v1/ai/status${query}`);
   if (!res.ok) {
     return {
       available: false,
       status: 'unavailable',
       provider: mode || 'ollama',
-      model: 'unknown',
+      model: model || 'unknown',
       message: 'Failed to contact backend API service.',
     };
   }
   return res.json();
 }
 
+export async function saveAIConfig(data: {
+  mode?: 'demo' | 'ollama';
+  model?: string;
+  endpoint?: string;
+}): Promise<{ success: boolean; status: AIProviderStatus }> {
+  const res = await fetch(`${API_BASE_URL}/api/v1/ai/configure`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error('Failed to update backend AI configuration');
+  return res.json();
+}
+
 export async function requestGenerateMissions(
   preferences: AdventurePreferences,
-  forcedMode?: 'ollama' | 'demo'
+  forcedMode?: 'ollama' | 'demo',
+  model?: string,
+  endpoint?: string
 ): Promise<GenerateMissionsResult> {
   const res = await fetch(`${API_BASE_URL}/api/v1/missions/generate`, {
     method: 'POST',
@@ -45,6 +72,8 @@ export async function requestGenerateMissions(
     body: JSON.stringify({
       ...preferences,
       forcedMode,
+      model,
+      endpoint,
     }),
   });
 

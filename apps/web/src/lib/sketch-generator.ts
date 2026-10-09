@@ -1,67 +1,483 @@
 /**
  * Utility to generate botanical specimen illustrations from written field descriptions.
- * Uses open, keyless generative image inference with vintage scientific prompt tuning,
+ * Uses open historical naturalist specimen collections with vintage scientific prompt tuning,
  * converting results to local Base64 for permanent offline IndexedDB storage.
+ * Automatically falls back to authentic curated scientific botanical field plates
+ * if offline.
  */
 
+export interface BotanicalPlateInfo {
+  id: string;
+  plateNumber: string;
+  shortName: string;
+  title: string;
+  subtitle: string;
+  src: string;
+  keywords: string[];
+  description: string;
+  details: {
+    title: string;
+    description: string;
+  }[];
+}
+
+export const BOTANICAL_FIELD_PLATES: BotanicalPlateInfo[] = [
+  {
+    id: 'plate-leaf-venation',
+    plateNumber: 'Plate I',
+    shortName: 'Venation',
+    title: 'Leaf Venation Patterns & Bilateral Symmetry',
+    subtitle: 'Botanical Morphology & Venation Architecture',
+    src: '/leaf_venation_reference.jpg',
+    keywords: [
+      'leaf', 'leaves', 'vein', 'venation', 'midrib', 'pinnate', 'palmate', 'parallel',
+      'reticulate', 'netted', 'symmetry', 'bilateral', 'petiole', 'stem', 'foliage', 'chlorophyll',
+      'branching pattern'
+    ],
+    description: 'Pinnate, Palmate, and Parallel leaf venation structures with morphological symmetry diagrams.',
+    details: [
+      {
+        title: '1. Pinnate (Feather-like)',
+        description: 'A prominent central midrib with secondary veins branching laterally (e.g. Oak, Beech, Elm).'
+      },
+      {
+        title: '2. Palmate (Hand-like)',
+        description: 'Multiple primary veins radiating from the leaf base like fingers from a palm (e.g. Maple, Ivy).'
+      },
+      {
+        title: '3. Parallel (Monocot)',
+        description: 'Longitudinal veins running parallel along the leaf blade length (e.g. Grasses, Plantain, Irises).'
+      }
+    ]
+  },
+  {
+    id: 'plate-bark-lichen',
+    plateNumber: 'Plate II',
+    shortName: 'Bark & Lichen',
+    title: 'Tree Bark Textures & Lichen Growth Forms',
+    subtitle: 'Symbiotic Bioindicators & Corticolous Microhabitats',
+    src: '/bark_lichen_reference.jpg',
+    keywords: [
+      'bark', 'lichen', 'tree', 'trunk', 'foliose', 'crustose', 'fruticose', 'wood',
+      'furrow', 'moss', 'symbiosis', 'fungus', 'algae', 'rhizine', 'cortex'
+    ],
+    description: 'Foliose and crustose growth forms on fissured and furrowed bark microhabitats.',
+    details: [
+      {
+        title: 'Foliose Lichens',
+        description: 'Leaf-like, loosely attached lobed structures with distinct upper and lower surfaces (e.g. Parmelia).'
+      },
+      {
+        title: 'Crustose Lichens',
+        description: 'Crust-like patches tightly adhered to rock or bark surfaces, inseparable without damaging substrate.'
+      },
+      {
+        title: 'Furrowed Bark Microhabitats',
+        description: 'Deep vertical fissures retain moisture and shelter microscopic invertebrates and moss cushions.'
+      }
+    ]
+  },
+  {
+    id: 'plate-canopy-acoustic',
+    plateNumber: 'Plate III',
+    shortName: 'Canopy',
+    title: 'Canopy Acoustic Layering & Avian Study',
+    subtitle: 'Bioacoustics & Arboreal Stratification',
+    src: '/canopy_acoustic.jpg',
+    keywords: [
+      'canopy', 'acoustic', 'sound', 'audio', 'bird', 'avian', 'song', 'call',
+      'branch', 'foliage', 'singing', 'perch', 'strata', 'chirp', 'listen', 'vocal'
+    ],
+    description: 'Sound propagation across canopy tiers and bird perching strategies.',
+    details: [
+      {
+        title: 'Emergent Tier Vocalization',
+        description: 'High-frequency broadcast territorial calls penetrate through open air above the forest canopy.'
+      },
+      {
+        title: 'Mid-Canopy Reverberation',
+        description: 'Denser branch leaves attenuate directional acoustics, favoring whistle tones and rhythmic pulses.'
+      },
+      {
+        title: 'Understory Micro-calls',
+        description: 'Soft contact calls and ground-scratching acoustic signatures within low shrub layers.'
+      }
+    ]
+  },
+  {
+    id: 'plate-urban-microhabitat',
+    plateNumber: 'Plate IV',
+    shortName: 'Urban Flora',
+    title: 'Urban Microhabitat & Pavement Flora',
+    subtitle: 'Pioneer Plants & Anthropogenic Micro-ecology',
+    src: '/urban_microhabitat.jpg',
+    keywords: [
+      'urban', 'city', 'pavement', 'crack', 'wall', 'brick', 'sidewalk',
+      'microhabitat', 'concrete', 'weed', 'succulent', 'crevice', 'asphalt', 'stone', 'masonry'
+    ],
+    description: 'Pavement crevices, mortar niches, and urban pioneer plant communities.',
+    details: [
+      {
+        title: 'Pavement Crevice Colonizers',
+        description: 'Tap-rooted ruderal plants (e.g. Dandelion, Plantain) anchor deeply into compacted gravel.'
+      },
+      {
+        title: 'Mortar & Brick Bryophytes',
+        description: 'Calciphilic mosses thrive on lime mortar moisture seepage along north-facing walls.'
+      },
+      {
+        title: 'Urban Bio-reflectance',
+        description: 'Thermal mass of concrete creates elevated microclimates supporting prolonged growth cycles.'
+      }
+    ]
+  },
+  {
+    id: 'plate-botanical-herbarium',
+    plateNumber: 'Plate V',
+    shortName: 'Herbarium',
+    title: 'Botanical Specimen & Herbarium Field Study',
+    subtitle: 'Naturalist Herbarium & Floral Morphology',
+    src: '/botanical_hero.jpg',
+    keywords: [
+      'flower', 'specimen', 'plant', 'botanical', 'herbarium', 'petal', 'flora',
+      'root', 'garden', 'nature', 'blossom', 'sepal', 'stamen', 'pistil', 'stem', 'wildflower'
+    ],
+    description: 'Field herbarium specimen mounting and anatomical floral taxonomy study.',
+    details: [
+      {
+        title: 'Floral Morphology Study',
+        description: 'Sepals, petals, stamens, and pistil anatomical dissection for precise species classification.'
+      },
+      {
+        title: 'Herbarium Pressing Standards',
+        description: 'Specimens dried between absorbent sheets to preserve diagnostic venation and petal geometry.'
+      },
+      {
+        title: 'Phenological Record-Keeping',
+        description: 'Documenting seasonal bud burst, anthesis, seed formation, and pollinator interactions.'
+      }
+    ]
+  },
+  {
+    id: 'plate-leaf-margins',
+    plateNumber: 'Plate VI',
+    shortName: 'Margins',
+    title: 'Leaf Margin Architecture & Edge Morphology',
+    subtitle: 'Margin Types & Blade Boundary Taxonomy',
+    src: '/leaf_margins_reference.jpg',
+    keywords: [
+      'margin', 'margins', 'edge', 'edges', 'entire', 'smooth', 'serrated', 'serrate',
+      'toothed', 'teeth', 'dentate', 'lobed', 'crenate', 'sinus', 'sinuses', 'boundary',
+      'notches', 'saw-like', 'leaf margins'
+    ],
+    description: 'Entire (smooth), Serrate (saw-toothed), Dentate, Crenate, and Lobed blade boundaries with diagnostic edge anatomy.',
+    details: [
+      {
+        title: '1. Smooth (Entire)',
+        description: 'Smooth, uninterrupted outer perimeter without teeth, notches, or serration (e.g. Lilac, Dogwood, Magnolia).'
+      },
+      {
+        title: '2. Serrated (Toothed & Dentate)',
+        description: 'Saw-like sharp teeth pointing toward the apex or outward along the blade perimeter (e.g. Birch, Elm, Cherry).'
+      },
+      {
+        title: '3. Lobed & Sinuate',
+        description: 'Deep indentations or rounded lobes dividing the leaf blade lamina with pronounced sinuses (e.g. Oak, Maple).'
+      }
+    ]
+  },
+  {
+    id: 'plate-leaf-surface',
+    plateNumber: 'Plate VII',
+    shortName: 'Surface',
+    title: 'Leaf Surface Anatomy & Micro-Morphology',
+    subtitle: 'Cuticular Wax, Trichomes & Stomatal Architecture',
+    src: '/leaf_surface_reference.jpg',
+    keywords: [
+      'surface', 'cuticle', 'wax', 'waxiness', 'hydrophobic', 'trichome', 'trichomes',
+      'hair', 'hairs', 'pubescence', 'pubescent', 'velvety', 'glabrous', 'stomata',
+      'epidermis', 'guard cells', 'coating', 'surface properties'
+    ],
+    description: 'Microscopic and macro surface features including epicuticular wax layers, defensive trichomes, and stomatal complexes.',
+    details: [
+      {
+        title: '1. Waxiness / Cuticle',
+        description: 'Shiny, glossy hydrophobic coating on top vs. matte underside; lipid cuticle seals water and repels rain droplets.'
+      },
+      {
+        title: '2. Trichomes (Foliar Hairs)',
+        description: 'Fine hairs or velvety texture on leaf surfaces serving as a defense barrier against wind desiccation and insects.'
+      },
+      {
+        title: '3. Stomatal Complexes & Pavement',
+        description: 'Microscopic pores and guard cells regulating transpiration and gas exchange across the epidermal blade layer.'
+      }
+    ]
+  }
+];
+
+/**
+ * Intelligently match an observation note or mission to the most relevant
+ * authentic scientific botanical field plate.
+ */
+export function getMatchingBotanicalPlate(
+  description?: string,
+  title?: string,
+  environment?: string
+): BotanicalPlateInfo {
+  const noteText = (description || '').toLowerCase();
+  const titleText = (title || '').toLowerCase();
+  const envText = (environment || '').toLowerCase();
+
+  // 1. Direct decisive keyword routing based on the naturalist's actual written field notes
+  if (
+    noteText.includes('margin') ||
+    noteText.includes('serrate') ||
+    noteText.includes('dentate') ||
+    noteText.includes('lobed') ||
+    noteText.includes('crenate') ||
+    noteText.includes('sinus')
+  ) {
+    return BOTANICAL_FIELD_PLATES[5]; // Plate VI: Margins
+  }
+  if (
+    noteText.includes('surface') ||
+    noteText.includes('cuticle') ||
+    noteText.includes('wax') ||
+    noteText.includes('trichome') ||
+    noteText.includes('pubescen') ||
+    noteText.includes('stomata')
+  ) {
+    return BOTANICAL_FIELD_PLATES[6]; // Plate VII: Surface
+  }
+  if (
+    noteText.includes('vein') ||
+    noteText.includes('venation') ||
+    noteText.includes('symmetry') ||
+    noteText.includes('pinnate') ||
+    noteText.includes('palmate') ||
+    noteText.includes('parallel') ||
+    noteText.includes('midrib')
+  ) {
+    return BOTANICAL_FIELD_PLATES[0]; // Plate I: Venation
+  }
+  if (
+    noteText.includes('bark') ||
+    noteText.includes('lichen') ||
+    noteText.includes('trunk') ||
+    noteText.includes('furrow') ||
+    noteText.includes('foliose') ||
+    noteText.includes('crustose')
+  ) {
+    return BOTANICAL_FIELD_PLATES[1]; // Plate II: Bark & Lichen
+  }
+  if (
+    noteText.includes('sound') ||
+    noteText.includes('acoustic') ||
+    noteText.includes('listen') ||
+    noteText.includes('avian') ||
+    noteText.includes('bird') ||
+    noteText.includes('canopy') ||
+    noteText.includes('vocal')
+  ) {
+    return BOTANICAL_FIELD_PLATES[2]; // Plate III: Canopy Bioacoustics
+  }
+  if (
+    noteText.includes('pavement') ||
+    noteText.includes('crack') ||
+    noteText.includes('crevice') ||
+    noteText.includes('mortar') ||
+    noteText.includes('sidewalk') ||
+    noteText.includes('brick') ||
+    noteText.includes('concrete')
+  ) {
+    return BOTANICAL_FIELD_PLATES[3]; // Plate IV: Urban Microhabitat
+  }
+  if (
+    noteText.includes('flower') ||
+    noteText.includes('petal') ||
+    noteText.includes('herbarium') ||
+    noteText.includes('sepal') ||
+    noteText.includes('stamen')
+  ) {
+    return BOTANICAL_FIELD_PLATES[4]; // Plate V: Herbarium
+  }
+
+  // 2. High-precision scored matching weighting noteText 5x higher than title and environment
+  let bestMatch = BOTANICAL_FIELD_PLATES[0];
+  let highestScore = -1;
+
+  for (const plate of BOTANICAL_FIELD_PLATES) {
+    let score = 0;
+    for (const kw of plate.keywords) {
+      if (noteText.includes(kw)) {
+        score += (kw.length > 5 ? 4 : 2) * 5; // 5x weight for field notes!
+      }
+      if (titleText.includes(kw)) {
+        score += kw.length > 5 ? 3 : 1;
+      }
+      if (envText.includes(kw)) {
+        score += 1;
+      }
+    }
+    if (score > highestScore) {
+      highestScore = score;
+      bestMatch = plate;
+    }
+  }
+
+  if (highestScore > 0) {
+    return bestMatch;
+  }
+
+  // 3. Title-based Fallbacks
+  const combinedText = `${titleText} ${envText}`.toLowerCase();
+  if (combinedText.includes('bark') || combinedText.includes('tree') || combinedText.includes('lichen')) {
+    return BOTANICAL_FIELD_PLATES[1];
+  }
+  if (combinedText.includes('sound') || combinedText.includes('bird') || combinedText.includes('canopy')) {
+    return BOTANICAL_FIELD_PLATES[2];
+  }
+  if (combinedText.includes('urban') || combinedText.includes('city') || combinedText.includes('wall')) {
+    return BOTANICAL_FIELD_PLATES[3];
+  }
+  if (combinedText.includes('margin') || combinedText.includes('serrate') || combinedText.includes('toothed') || combinedText.includes('lobed') || combinedText.includes('edge')) {
+    return BOTANICAL_FIELD_PLATES[5];
+  }
+  if (combinedText.includes('surface') || combinedText.includes('cuticle') || combinedText.includes('wax') || combinedText.includes('trichome') || combinedText.includes('hair')) {
+    return BOTANICAL_FIELD_PLATES[6];
+  }
+  if (combinedText.includes('leaf') || combinedText.includes('symmetry') || combinedText.includes('vein')) {
+    return BOTANICAL_FIELD_PLATES[0];
+  }
+
+  return BOTANICAL_FIELD_PLATES[4]; // Botanical Specimen Study default
+}
+
+/**
+ * Generate or re-illustrate a vintage naturalist botanical illustration.
+ * Attempts Pollinations AI with vintage naturalist prompt tuning first,
+ * seamlessly falls back to open historical naturalist archives and authentic field plates.
+ * Converts resulting images to Base64 for permanent offline IndexedDB storage.
+ */
 export async function generateBotanicalSketch(
   description: string,
   title?: string,
-  environment?: string
+  environment?: string,
+  currentPhotoUrl?: string
 ): Promise<string> {
-  if (!description || description.trim().length === 0) {
-    throw new Error('Please provide an observation description to illustrate.');
-  }
+  const matchedPlate = getMatchingBotanicalPlate(description, title, environment);
 
-  // Clean description of key prefixes and excessive whitespace
-  const cleanText = description
+  const cleanText = (description || '')
     .replace(/[A-Z][A-Za-z0-9\s()/-]{2,25}:/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 240);
+    .slice(0, 220);
 
-  const subjectTerms = [
-    title ? title : '',
-    environment ? `${environment} habitat` : '',
-    cleanText,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const combined = `${title || ''} ${environment || ''} ${cleanText}`.toLowerCase();
 
-  const prompt = `botanical specimen field sketch, watercolor study of ${subjectTerms}, vintage scientific naturalist illustration, antique parchment texture background, elegant flora morphology, detailed biological study, no text watermark`;
+  // 1. Try Pollinations AI with fast timeout
+  try {
+    const subject = cleanText || title || matchedPlate.title;
+    const prompt = `vintage botanical watercolor specimen of ${subject}, antique naturalist scientific plate on aged parchment, botanical morphology study, elegant flora art, detailed biological illustration`;
+    const seed = Math.floor(Math.random() * 899999) + 100000;
+    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=576&nologo=true&seed=${seed}`;
 
-  const seed = Math.floor(Math.random() * 899999) + 100000;
-  const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=576&nologo=true&seed=${seed}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(pollUrl, { signal: controller.signal });
+    clearTimeout(timer);
+
+    if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
+      const blob = await res.blob();
+      if (blob.size > 2000) {
+        return await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string) || pollUrl);
+          reader.onerror = () => resolve(pollUrl);
+          reader.readAsDataURL(blob);
+        });
+      }
+    }
+  } catch {
+    // Pollinations AI unavailable or paywalled; seamlessly proceed to open historical botanical archive
+  }
+
+  // 2. Query open naturalist botanical archive
+  let queryKeyword = 'vintage botanical watercolor specimen';
+  if (combined.includes('margin') || combined.includes('serrate') || combined.includes('dentate') || combined.includes('lobed')) {
+    queryKeyword = 'botanical illustration leaf margin morphology';
+  } else if (combined.includes('cuticle') || combined.includes('wax') || combined.includes('trichome') || combined.includes('stomata')) {
+    queryKeyword = 'botanical illustration leaf microscopic anatomy';
+  } else if (combined.includes('leaf') || combined.includes('symmetry') || combined.includes('vein')) {
+    queryKeyword = 'botanical illustration leaf specimen';
+  } else if (combined.includes('bark') || combined.includes('tree') || combined.includes('lichen')) {
+    queryKeyword = 'botanical illustration tree bark moss';
+  } else if (combined.includes('canopy') || combined.includes('bird') || combined.includes('sound') || combined.includes('acoustic')) {
+    queryKeyword = 'natural history bird illustration';
+  } else if (combined.includes('urban') || combined.includes('city') || combined.includes('wall') || combined.includes('pavement')) {
+    queryKeyword = 'botanical illustration weed pavement flora';
+  } else if (combined.includes('flower') || combined.includes('petal') || combined.includes('garden')) {
+    queryKeyword = 'botanical watercolor flower specimen';
+  }
 
   try {
-    // Attempt to convert to base64 for permanent local IndexedDB storage
+    const wmUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      queryKeyword
+    )}&gsrnamespace=6&prop=pageimages&pithumbsize=960&format=json&origin=*`;
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000);
-
-    const res = await fetch(imageUrl, {
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(wmUrl, {
       signal: controller.signal,
-      headers: { Accept: 'image/*' },
+      headers: { Accept: 'application/json' },
     });
-    clearTimeout(timeoutId);
+    clearTimeout(timeout);
 
-    if (!res.ok) {
-      // Fallback: return direct image URL if direct conversion is rejected
-      return imageUrl;
+    if (res.ok) {
+      const data = await res.json();
+      const pages = Object.values(data?.query?.pages || {});
+      const candidates = pages
+        .map((p: any) => p.thumbnail?.source)
+        .filter(
+          (src: string) =>
+            src &&
+            !src.includes('.pdf') &&
+            !src.includes('.djvu') &&
+            !src.includes('.gif') &&
+            src !== currentPhotoUrl
+        );
+
+      if (candidates.length > 0) {
+        const chosenUrl = candidates[Math.floor(Math.random() * candidates.length)];
+        try {
+          const imgRes = await fetch(chosenUrl);
+          if (imgRes.ok) {
+            const blob = await imgRes.blob();
+            if (blob.size > 2000 && blob.type.startsWith('image/')) {
+              return await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve((reader.result as string) || chosenUrl);
+                reader.onerror = () => resolve(chosenUrl);
+                reader.readAsDataURL(blob);
+              });
+            }
+          }
+        } catch {
+          return chosenUrl;
+        }
+      }
     }
-
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve((reader.result as string) || imageUrl);
-      };
-      reader.onerror = () => {
-        resolve(imageUrl);
-      };
-      reader.readAsDataURL(blob);
-    });
   } catch (err) {
-    console.warn('Direct image conversion to Base64 failed, falling back to direct URL:', err);
-    return imageUrl;
+    console.warn('Archive illustration search error or timeout:', err);
   }
+
+  // 3. Fallback: Authentically matched botanical field plate for this exact observation
+  const alternativePlates = BOTANICAL_FIELD_PLATES.filter((p) => p.src !== currentPhotoUrl);
+  if (alternativePlates.length > 0 && currentPhotoUrl === matchedPlate.src) {
+    const nextPlate = alternativePlates[Math.floor(Math.random() * alternativePlates.length)];
+    return nextPlate.src;
+  }
+
+  return matchedPlate.src;
 }

@@ -11,12 +11,14 @@ missionRouter.post('/generate', async (req: Request, res: Response, next: NextFu
       ? 'ollama'
       : undefined;
 
-    // Remove forcedMode from the preferences payload so it doesn't fail Zod parsing
-    const { forcedMode: _, ...preferences } = req.body || {};
+    // Remove non-preference fields from payload so they don't fail Zod parsing
+    const { forcedMode: _, model, endpoint, ...preferences } = req.body || {};
 
     const result = await missionGeneratorService.generateAdventureMissions(
       preferences,
-      forcedMode
+      forcedMode,
+      model,
+      endpoint
     );
 
     res.status(200).json(result);

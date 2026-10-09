@@ -18,8 +18,13 @@ export const App: React.FC = () => {
 
   const { data: aiStatus } = useQuery<AIProviderStatus>({
     queryKey: ['aiStatusGlobal'],
-    queryFn: () => fetchAIStatus(),
-    refetchInterval: 60000,
+    queryFn: () => {
+      const mode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'demo';
+      const model = localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
+      const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
+      return fetchAIStatus(mode, model, endpoint);
+    },
+    refetchInterval: 30000,
     retry: 1,
   });
 

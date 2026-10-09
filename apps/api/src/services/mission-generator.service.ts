@@ -27,14 +27,28 @@ export class MissionGeneratorService {
     return this.demoProvider;
   }
 
-  async checkAIStatus(forcedMode?: 'ollama' | 'demo'): Promise<ProviderAvailability> {
+  updateOllamaConfig(baseUrl?: string, model?: string) {
+    if (baseUrl) this.ollamaProvider.baseUrl = baseUrl;
+    if (model) this.ollamaProvider.modelId = model;
+  }
+
+  async checkAIStatus(
+    forcedMode?: 'ollama' | 'demo',
+    model?: string,
+    endpoint?: string
+  ): Promise<ProviderAvailability> {
     const provider = this.getProvider(forcedMode);
+    if (provider.providerId === 'ollama') {
+      return await this.ollamaProvider.checkAvailability(model, endpoint);
+    }
     return await provider.checkAvailability();
   }
 
   async generateAdventureMissions(
     rawPreferences: unknown,
-    forcedMode?: 'ollama' | 'demo'
+    forcedMode?: 'ollama' | 'demo',
+    model?: string,
+    endpoint?: string
   ): Promise<GenerateMissionsResponse> {
     // Validate request preferences using Zod
     const preferencesResult = AdventurePreferencesSchema.safeParse(rawPreferences);
@@ -51,7 +65,11 @@ export class MissionGeneratorService {
 
     let missions: NatureMission[];
     try {
-      missions = await provider.generateMissions(preferences);
+      if (provider.providerId === 'ollama') {
+        missions = await this.ollamaProvider.generateMissions(preferences, model, endpoint);
+      } else {
+        missions = await provider.generateMissions(preferences);
+      }
     } catch (err: any) {
       // If configured for Ollama but model is not yet pulled or container is warming up, gracefully fallback
       if (provider.providerId === 'ollama') {

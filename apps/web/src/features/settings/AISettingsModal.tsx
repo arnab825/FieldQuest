@@ -18,7 +18,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { AIProviderStatus } from '../../types/index.js';
 import { exportAllDataAsJSON, importDataFromJSON, clearAllLocalData } from '../../lib/db.js';
-import { fetchAIStatus } from '../../services/api.js';
+import { fetchAIStatus, saveAIConfig } from '../../services/api.js';
 
 interface AISettingsModalProps {
   isOpen: boolean;
@@ -52,14 +52,30 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   const [copiedCommand, setCopiedCommand] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
+  const installedList = testResult?.installedModels || aiStatus?.installedModels || [];
+
+  const isModelInstalled = (mId: string) => {
+    return installedList.some(
+      (inst) => inst === mId || inst.startsWith(mId.split(':')[0]) || mId.startsWith(inst.split(':')[0])
+    );
+  };
+
+  const isCurrentModelInstalled = installedList.length === 0 || isModelInstalled(model);
+
   if (!isOpen) return null;
 
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await fetchAIStatus(selectedMode);
+      const res = await fetchAIStatus(selectedMode, model, endpoint);
       setTestResult(res);
+
+      // Automatically sync input field to matched or auto-synced model from container!
+      if (res.available && res.model && res.model !== 'unknown') {
+        setModel(res.model);
+        localStorage.setItem('fieldquest_ollama_model', res.model);
+      }
     } catch {
       setTestResult({
         available: false,
@@ -73,13 +89,24 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     }
   };
 
-  const handleSaveSettings = () => {
+  const handleSaveSettings = async () => {
     localStorage.setItem('fieldquest_ai_mode', selectedMode);
     localStorage.setItem('fieldquest_ollama_endpoint', endpoint);
     localStorage.setItem('fieldquest_ollama_model', model);
 
-    // Refresh query so Navbar status updates immediately
+    try {
+      await saveAIConfig({
+        mode: selectedMode,
+        model: model,
+        endpoint: endpoint,
+      });
+    } catch (err) {
+      console.warn('Backend sync fallback:', err);
+    }
+
+    // Refresh queries so Navbar status updates immediately
     queryClient.invalidateQueries({ queryKey: ['aiStatusGlobal'] });
+    queryClient.invalidateQueries({ queryKey: ['aiStatus'] });
 
     setSavedSuccess(true);
     setTimeout(() => setSavedSuccess(false), 2500);
@@ -278,24 +305,108 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
                 />
 
-                {/* Popular Models Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] text-text-muted mr-1">Presets:</span>
-                  {popularModels.map(m => (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setModel(m.id)}
-                      className={`text-[10px] px-2 py-1 rounded-lg border font-mono transition-colors cursor-pointer ${
-                        model === m.id
-                          ? 'border-forest-deep bg-forest-deep text-paper-white'
-                          : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
-                      }`}
-                      title={m.note}
-                    >
-                      {m.name}
-                    </button>
-                  ))}
+                {/* Popular Models Chips with Installed vs Needs Download Badges */}
+                <div className="space-y-2 mt-2">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] text-text-muted mr-1">Presets:</span>
+                    {popularModels.map(m => {
+                      const isPresetInstalled = isModelInstalled(m.id);
+                      const isSelected = model === m.id;
+
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => setModel(m.id)}
+                          className={`text-[10px] px-2.5 py-1 rounded-lg border font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                            isSelected
+                              ? 'border-forest-deep bg-forest-deep text-paper-white shadow-2xs font-semibold'
+                              : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
+                          }`}
+                          title={
+                            isPresetInstalled
+                              ? `${m.note} (Already downloaded in Podman container)`
+                              : `${m.note} (Requires download via Podman)`
+                          }
+                        >
+                          <span>{m.name}</span>
+                          {isPresetInstalled ? (
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isSelected ? 'bg-leaf-accent' : 'bg-emerald-500'
+                              }`}
+                              title="Ready in Podman container"
+                            />
+                          ) : (
+                            <span
+                              className={`text-[8px] uppercase tracking-wider px-1 py-0.2 rounded font-sans font-bold ${
+                                isSelected ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                              }`}
+                              title="Requires podman pull"
+                            >
+                              pull
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Visual Instruction: If selected model requires Podman download */}
+                  {!isCurrentModelInstalled && (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 text-amber-950 font-bold">
+                        <Download className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                        <span>Download "{model}" using Podman</span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-relaxed">
+                        This model is not yet downloaded inside your container. Run this command in your PowerShell/terminal:
+                      </p>
+                      <div className="flex items-center justify-between p-2 rounded-lg bg-forest-deep text-leaf-accent font-mono text-[11px] shadow-2xs">
+                        <span className="overflow-x-auto scrollbar-none pr-2">
+                          podman exec -it fieldquest-ai ollama pull {model}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${model}`)}
+                          className="p-1 hover:bg-white/10 rounded cursor-pointer text-paper-white shrink-0"
+                          title="Copy Podman pull command"
+                        >
+                          {copiedCommand ? <Check className="w-3.5 h-3.5 text-leaf-accent" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                      {installedList.length > 0 && (
+                        <div className="text-[11px] text-amber-900 flex flex-wrap items-center gap-1 pt-0.5">
+                          <span>Or use currently downloaded model:</span>
+                          {installedList.map(mName => (
+                            <button
+                              key={mName}
+                              type="button"
+                              onClick={() => setModel(mName)}
+                              className="underline font-bold text-forest-deep hover:text-emerald-800 cursor-pointer"
+                            >
+                              ✓ {mName} (Ready)
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* If selected model is installed and ready */}
+                  {isCurrentModelInstalled && installedList.length > 0 && (
+                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-950 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                        <span>
+                          Model <code className="font-mono font-bold bg-white/70 px-1 py-0.5 rounded text-emerald-900">{model}</code> is downloaded & ready in Podman.
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                        Ready
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -371,11 +482,36 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                     </div>
                   )}
 
-                  {/* List installed models if available */}
+                  {/* List installed models if available with one-click sync */}
                   {testResult.installedModels && testResult.installedModels.length > 0 && (
-                    <div className="pt-1 text-[10px]">
-                      <span className="font-semibold">Installed in container:</span>{' '}
-                      {testResult.installedModels.join(', ')}
+                    <div className="pt-2 text-[11px] border-t border-border-subtle/50 mt-1">
+                      <span className="font-semibold text-forest-deep block mb-1">
+                        Installed in your Ollama container:
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {testResult.installedModels.map(mName => (
+                          <button
+                            key={mName}
+                            type="button"
+                            onClick={() => {
+                              setModel(mName);
+                              localStorage.setItem('fieldquest_ollama_model', mName);
+                            }}
+                            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border transition-all cursor-pointer flex items-center gap-1 ${
+                              model === mName
+                                ? 'bg-forest-deep text-paper-white border-forest-deep font-bold shadow-2xs'
+                                : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
+                            }`}
+                            title="Click to select this installed model"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span>{mName}</span>
+                            <span className="text-[9px] opacity-80">
+                              {model === mName ? '(Active)' : '(Sync)'}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
