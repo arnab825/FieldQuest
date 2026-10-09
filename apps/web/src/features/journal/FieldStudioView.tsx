@@ -10,6 +10,14 @@ import {
   Layers,
   Wand2,
   Image as ImageIcon,
+  Scroll,
+  Microscope,
+  Leaf,
+  PenTool,
+  Feather,
+  RectangleHorizontal,
+  Square,
+  Compass,
 } from 'lucide-react';
 import {
   BOTANICAL_STYLE_PRESETS,
@@ -23,6 +31,23 @@ import {
   addJournalEntry,
   JournalEntry,
 } from '../../lib/db.js';
+
+const STYLE_ICONS: Record<BotanicalStyleKey, React.ReactNode> = {
+  vintage_plate: <Scroll className="w-4 h-4 text-amber-600 shrink-0" />,
+  microscopic: <Microscope className="w-4 h-4 text-emerald-600 shrink-0" />,
+  herbarium: <Leaf className="w-4 h-4 text-moss-green shrink-0" />,
+  journal_sketch: <PenTool className="w-4 h-4 text-teal-600 shrink-0" />,
+  copperplate: <Feather className="w-4 h-4 text-stone-600 shrink-0" />,
+  custom: <Wand2 className="w-4 h-4 text-indigo-600 shrink-0" />,
+};
+
+const QUICK_SUGGESTIONS = [
+  { label: 'Bilateral Oak Venation', icon: Leaf },
+  { label: 'Sycamore Bark Lichen', icon: Compass },
+  { label: 'Dandelion Pappus Seed', icon: Sparkles },
+  { label: 'Pitcher Plant Lithograph', icon: Scroll },
+  { label: 'Pine Cone Fibonacci Spiral', icon: Layers },
+];
 
 export const FieldStudioView: React.FC = () => {
   const [subject, setSubject] = useState('Bilateral oak leaf with pinnate venation');
@@ -141,7 +166,7 @@ export const FieldStudioView: React.FC = () => {
       </div>
 
       {/* Main Studio Grid: Left Studio Controls, Right Live Artboard */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10 items-start">
         {/* Left Column: Studio Controls (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-6 shadow-xs space-y-4">
@@ -164,53 +189,59 @@ export const FieldStudioView: React.FC = () => {
               />
               {/* Quick Subject Suggestions */}
               <div className="flex flex-wrap gap-1.5 pt-1">
-                {[
-                  'Bilateral Oak Venation',
-                  'Sycamore Bark Lichen',
-                  'Dandelion Pappus Seed',
-                  'Pitcher Plant Lithograph',
-                  'Pine Cone Fibonacci Spiral',
-                ].map(sug => (
+                {QUICK_SUGGESTIONS.map(({ label, icon: SugIcon }) => (
                   <button
-                    key={sug}
+                    key={label}
                     type="button"
-                    onClick={() => setSubject(sug)}
-                    className="text-[10px] px-2 py-0.5 rounded-md bg-parchment-warm hover:bg-forest-deep/10 text-forest-deep transition-colors cursor-pointer"
+                    onClick={() => setSubject(label)}
+                    className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-parchment-warm hover:bg-forest-deep/10 text-forest-deep transition-all cursor-pointer border border-border-subtle/80 shadow-2xs hover:scale-[1.02]"
                   >
-                    + {sug}
+                    <SugIcon className="w-3 h-3 text-moss-green shrink-0" />
+                    <span>{label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Art Style Presets */}
+            {/* Art Style Presets - Fully Responsive with Icons */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-forest-deep">
                 Historical Art Style:
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(BOTANICAL_STYLE_PRESETS).map(([key, preset]) => {
-                  const isSelected = styleKey === key;
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5">
+                {BOTANICAL_STYLE_PRESETS.map((preset) => {
+                  const isSelected = styleKey === preset.key;
                   return (
                     <button
-                      key={key}
+                      key={preset.key}
                       type="button"
-                      onClick={() => setStyleKey(key as BotanicalStyleKey)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      onClick={() => setStyleKey(preset.key)}
+                      className={`p-2.5 sm:p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
                         isSelected
-                          ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
-                          : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
+                          ? 'border-forest-deep bg-forest-deep text-paper-white shadow-sm ring-2 ring-forest-deep/20'
+                          : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm hover:border-forest-deep/30'
                       }`}
                     >
-                      <div className="font-bold text-xs truncate">
-                        {preset.label}
-                      </div>
                       <div
-                        className={`text-[10px] line-clamp-1 ${
-                          isSelected ? 'text-leaf-accent' : 'text-text-muted'
+                        className={`p-1.5 rounded-xl shrink-0 transition-colors ${
+                          isSelected
+                            ? 'bg-paper-white/20 text-paper-white'
+                            : 'bg-forest-deep/5 text-forest-deep'
                         }`}
                       >
-                        {preset.description}
+                        {STYLE_ICONS[preset.key] || <Palette className="w-4 h-4" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-xs sm:text-sm leading-snug">
+                          {preset.label}
+                        </div>
+                        <div
+                          className={`text-[10px] sm:text-[11px] mt-0.5 leading-tight ${
+                            isSelected ? 'text-leaf-accent' : 'text-text-muted'
+                          }`}
+                        >
+                          {preset.description}
+                        </div>
                       </div>
                     </button>
                   );
@@ -218,25 +249,29 @@ export const FieldStudioView: React.FC = () => {
               </div>
             </div>
 
-            {/* Aspect Ratio & Seed */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
+            {/* Aspect Ratio & Seed - Responsive with Icons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
               <div>
                 <label className="block text-xs font-bold text-forest-deep mb-1">
                   Format:
                 </label>
                 <div className="flex gap-1.5">
-                  {(['landscape', 'square'] as const).map(asp => (
+                  {[
+                    { key: 'landscape', label: 'Landscape', icon: RectangleHorizontal },
+                    { key: 'square', label: 'Square', icon: Square },
+                  ].map(({ key, label, icon: AspIcon }) => (
                     <button
-                      key={asp}
+                      key={key}
                       type="button"
-                      onClick={() => setAspect(asp)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors cursor-pointer ${
-                        aspect === asp
-                          ? 'bg-forest-deep text-paper-white'
+                      onClick={() => setAspect(key as any)}
+                      className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold capitalize transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        aspect === key
+                          ? 'bg-forest-deep text-paper-white shadow-xs'
                           : 'bg-paper-white text-forest-deep border border-border-subtle hover:bg-parchment-warm'
                       }`}
                     >
-                      {asp}
+                      <AspIcon className="w-3.5 h-3.5" />
+                      <span>{label}</span>
                     </button>
                   ))}
                 </div>
@@ -249,10 +284,10 @@ export const FieldStudioView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setSeed(Math.floor(Math.random() * 899999) + 100000)}
-                  className="w-full py-1.5 px-2 rounded-lg border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full py-2 px-3 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-bold text-forest-deep flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
                 >
-                  <RefreshCw className="w-3.5 h-3.5 text-moss-green" />
-                  <span>#{seed}</span>
+                  <RefreshCw className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                  <span>Seed #{seed}</span>
                 </button>
               </div>
             </div>
@@ -284,9 +319,9 @@ export const FieldStudioView: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Column: Live Artboard / Studio Canvas (7 cols) */}
-        <div className="lg:col-span-7 flex flex-col">
-          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-6 shadow-xs flex-1 flex flex-col justify-between space-y-4">
+        {/* Right Column: Live Artboard / Studio Canvas (7 cols, sticky on desktop to prevent awkward empty gap) */}
+        <div className="lg:col-span-7 space-y-4 lg:sticky lg:top-24">
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-6 shadow-xs space-y-4">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-border-subtle mb-4">
                 <div className="flex items-center gap-2">
@@ -303,7 +338,7 @@ export const FieldStudioView: React.FC = () => {
               </div>
 
               {/* Artwork Display */}
-              <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm/80 min-h-[380px] flex items-center justify-center relative shadow-inner">
+              <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm/80 min-h-[300px] flex items-center justify-center relative shadow-inner">
                 {isGenerating ? (
                   <div className="text-center p-8 space-y-3">
                     <Sparkles className="w-10 h-10 text-moss-green animate-spin mx-auto" />
@@ -336,12 +371,12 @@ export const FieldStudioView: React.FC = () => {
 
             {/* Artboard Controls (when result is present) */}
             {result && !isGenerating && (
-              <div className="pt-3 border-t border-border-subtle flex flex-wrap items-center justify-between gap-3">
+              <div className="pt-3 border-t border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="text-xs text-text-muted line-clamp-1 max-w-xs">
                   Prompt: <span className="font-medium text-forest-deep">"{result.promptUsed}"</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
                     onClick={handleDownload}

@@ -22,7 +22,7 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 
 - 🍃 **Context-Aware Nature Missions:** Generates tailored 15, 30, or 60-minute observational quests based on your environment, interests, difficulty, and time.
 - 🎨 **Creative Field Studio (`/studio`):** An interactive botanical illustration workshop to sketch wild specimens, experiment with 4 historical scientific art styles (*Vintage Naturalist Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*), randomize seeds, and download high-resolution diagnostic plates.
-- 🌿 **Classical Herbarium Folios & Inspection Modal:** 7 curated anatomical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with morphological diagnostic keys, inspectable directly inside your journal without losing context.
+- 🌿 **Classical Herbarium Folios & Inline Reference Drawer:** 7 curated anatomical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with morphological diagnostic keys, expandable directly inline within each journal observation card without disruptive modals or redirects.
 - 📖 **Focused Local Nature Journal (`/journal`):** A distraction-free explorer's log with dedicated **Adventures** history and **Field Notes & Observations** logs. Includes full JSON export and restore backup functionality.
 - 🧠 **Open-Weight AI Integration:** Powered by local open-weight models via **Ollama** (defaulting to `qwen2.5:3b` or Gemma), keeping prompts and insights private and sovereign.
 - ⚡ **Zero-Config Demo Mode:** High-fidelity deterministic mission generator for immediate exploration without needing a local AI GPU or daemon.

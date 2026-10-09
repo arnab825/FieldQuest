@@ -21,8 +21,6 @@ import {
   RotateCcw,
   Edit3,
   Save,
-  X,
-  Palette,
 } from 'lucide-react';
 import {
   getAllAdventures,
@@ -45,7 +43,6 @@ import {
   generateBotanicalSketch,
   getMatchingBotanicalPlate,
   BOTANICAL_FIELD_PLATES,
-  BotanicalPlateInfo,
 } from '../../lib/sketch-generator.js';
 
 export const JournalView: React.FC = () => {
@@ -70,7 +67,7 @@ export const JournalView: React.FC = () => {
   const [selectedFilterPlateId, setSelectedFilterPlateId] = useState<string | null>(null);
   const [platePickerEntryId, setPlatePickerEntryId] = useState<string | null>(null);
   const [generatingSketchId, setGeneratingSketchId] = useState<string | null>(null);
-  const [inspectingPlate, setInspectingPlate] = useState<BotanicalPlateInfo | null>(null);
+  const [expandedReferenceEntryId, setExpandedReferenceEntryId] = useState<string | null>(null);
 
   const loadData = async () => {
     const advList = await getAllAdventures();
@@ -763,12 +760,12 @@ export const JournalView: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => setInspectingPlate(activeRefPlate)}
+                              onClick={() => setExpandedReferenceEntryId(prev => prev === ent.id ? null : ent.id)}
                               className="text-forest-deep hover:underline font-semibold flex items-center gap-1 cursor-pointer bg-forest-deep/5 hover:bg-forest-deep/10 px-2 py-0.5 rounded-md"
-                              title="Inspect botanical reference plate"
+                              title="Toggle inline reference plate"
                             >
                               <BookOpen className="w-3 h-3 text-moss-green" />
-                              <span>View Reference Plate</span>
+                              <span>{expandedReferenceEntryId === ent.id ? 'Hide Reference' : 'View Reference Plate'}</span>
                             </button>
                             <span>•</span>
                             <button
@@ -837,12 +834,16 @@ export const JournalView: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={() => setInspectingPlate(matchedPlate)}
+                        onClick={() => setExpandedReferenceEntryId(prev => prev === ent.id ? null : ent.id)}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-forest-deep hover:bg-parchment-warm transition-colors cursor-pointer"
-                        title={`Inspect reference details for ${matchedPlate.plateNumber}`}
+                        title="Toggle inline reference plate"
                       >
                         <BookOpen className="w-3.5 h-3.5 text-moss-green" />
-                        <span>View Reference Plate ({matchedPlate.plateNumber})</span>
+                        <span>
+                          {expandedReferenceEntryId === ent.id
+                            ? `Hide Reference (${matchedPlate.plateNumber})`
+                            : `View Reference Plate (${matchedPlate.plateNumber})`}
+                        </span>
                       </button>
                     </div>
                   )}
@@ -1063,6 +1064,89 @@ export const JournalView: React.FC = () => {
                     </div>
                   )}
 
+                  {/* Inline Botanical Reference Drawer (No Modal) */}
+                  {expandedReferenceEntryId === ent.id && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-parchment-warm/90 border border-moss-green/30 space-y-4 animate-in fade-in slide-in-from-top-1 duration-200">
+                      {/* Drawer Header */}
+                      <div className="flex items-start justify-between gap-3 border-b border-border-subtle/80 pb-2.5">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green">
+                              Scientific Reference Folio {activeRefPlate.plateNumber}
+                            </span>
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep">
+                              {activeRefPlate.shortName}
+                            </span>
+                          </div>
+                          <h4 className="font-editorial text-lg sm:text-xl font-bold text-forest-deep mt-0.5">
+                            {activeRefPlate.title}
+                          </h4>
+                          <p className="text-xs text-text-muted mt-0.5">
+                            {activeRefPlate.subtitle}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setExpandedReferenceEntryId(null)}
+                          className="px-2.5 py-1 rounded-xl bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep border border-border-subtle transition-colors cursor-pointer shrink-0"
+                        >
+                          Hide Reference
+                        </button>
+                      </div>
+
+                      {/* Reference Plate Image */}
+                      <div className="rounded-xl overflow-hidden border border-border-subtle bg-paper-white relative">
+                        <img
+                          src={activeRefPlate.src}
+                          alt={activeRefPlate.title}
+                          className="w-full h-auto object-cover max-h-[340px]"
+                        />
+                      </div>
+
+                      {/* Scientific Description */}
+                      <p className="text-xs text-text-muted leading-relaxed">
+                        {activeRefPlate.description}
+                      </p>
+
+                      {/* 3 Morphological Diagnostic Keys */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                        {activeRefPlate.details.map((detail, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl bg-paper-white/80 border border-border-subtle space-y-1 shadow-2xs"
+                          >
+                            <span className="font-bold text-forest-deep block text-[11px]">
+                              {detail.title}
+                            </span>
+                            <p className="text-text-muted text-[11px] leading-relaxed">
+                              {detail.description}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Actions inside inline panel */}
+                      <div className="pt-2 border-t border-border-subtle/60 flex items-center justify-between text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFilterPlateId(activeRefPlate.id)}
+                          className="font-semibold text-moss-green hover:underline cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Layers className="w-3.5 h-3.5" />
+                          <span>Filter all notes by {activeRefPlate.plateNumber}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedReferenceEntryId(null)}
+                          className="text-text-muted hover:text-forest-deep cursor-pointer font-medium"
+                        >
+                          Collapse Reference ▲
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Metadata Footer */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border-subtle text-xs text-text-muted">
                     <div className="flex flex-wrap items-center gap-2.5">
@@ -1083,12 +1167,21 @@ export const JournalView: React.FC = () => {
                       )}
                       <button
                         type="button"
-                        onClick={() => setInspectingPlate(activeRefPlate)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep font-semibold text-[11px] border border-border-subtle transition-colors cursor-pointer shadow-2xs"
-                        title={`Inspect botanical reference ${activeRefPlate.plateNumber} (${activeRefPlate.shortName})`}
+                        onClick={() => setExpandedReferenceEntryId(prev => prev === ent.id ? null : ent.id)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-semibold text-[11px] border transition-colors cursor-pointer shadow-2xs ${
+                          expandedReferenceEntryId === ent.id
+                            ? 'bg-moss-green text-paper-white border-moss-green'
+                            : 'bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep border-border-subtle'
+                        }`}
+                        title={expandedReferenceEntryId === ent.id ? 'Collapse botanical reference' : `Expand reference ${activeRefPlate.plateNumber}`}
                       >
                         <BookOpen className="w-3 h-3 text-moss-green" />
                         <span>Reference: {activeRefPlate.plateNumber} ({activeRefPlate.shortName})</span>
+                        {expandedReferenceEntryId === ent.id ? (
+                          <ChevronUp className="w-3 h-3 ml-0.5" />
+                        ) : (
+                          <ChevronDown className="w-3 h-3 ml-0.5" />
+                        )}
                       </button>
                     </div>
 
@@ -1142,116 +1235,7 @@ export const JournalView: React.FC = () => {
         )}
       </div>
 
-      {/* Botanical Reference Plate Inspection Modal */}
-      {inspectingPlate && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 bg-forest-dark/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
-          onClick={() => setInspectingPlate(null)}
-        >
-          <div
-            className="bg-paper-white rounded-3xl border border-border-subtle max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green">
-                    Scientific Folio {inspectingPlate.plateNumber}
-                  </span>
-                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep">
-                    {inspectingPlate.shortName}
-                  </span>
-                </div>
-                <h3 className="font-editorial text-xl sm:text-2xl font-bold text-forest-deep mt-0.5">
-                  {inspectingPlate.title}
-                </h3>
-                <p className="text-xs text-text-muted mt-0.5">
-                  {inspectingPlate.subtitle}
-                </p>
-              </div>
 
-              <button
-                type="button"
-                onClick={() => setInspectingPlate(null)}
-                className="p-1.5 rounded-xl hover:bg-parchment-warm text-text-muted hover:text-forest-deep transition-colors cursor-pointer shrink-0"
-                aria-label="Close Reference Plate"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Reference Plate Image */}
-            <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm relative">
-              <img
-                src={inspectingPlate.src}
-                alt={inspectingPlate.title}
-                className="w-full h-auto object-cover max-h-[380px]"
-              />
-            </div>
-
-            {/* Scientific Description */}
-            <p className="text-xs text-text-muted leading-relaxed">
-              {inspectingPlate.description}
-            </p>
-
-            {/* Diagnostic Keys */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-              {inspectingPlate.details.map((detail, idx) => (
-                <div
-                  key={idx}
-                  className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1"
-                >
-                  <span className="font-bold text-forest-deep block text-[11px]">
-                    {detail.title}
-                  </span>
-                  <p className="text-text-muted text-[11px] leading-relaxed">
-                    {detail.description}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            {/* Modal Actions */}
-            <div className="pt-3 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedFilterPlateId(inspectingPlate.id);
-                  setInspectingPlate(null);
-                }}
-                className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-              >
-                <Layers className="w-3.5 h-3.5 text-moss-green" />
-                <span>Filter Journal by this Plate</span>
-              </button>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigate('/studio');
-                  }}
-                  className="px-3.5 py-2 rounded-xl bg-forest-deep/10 hover:bg-forest-deep/15 text-forest-deep text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Palette className="w-3.5 h-3.5 text-moss-green" />
-                  <span>Illustrate in Studio</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setInspectingPlate(null)}
-                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold cursor-pointer shadow-xs"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

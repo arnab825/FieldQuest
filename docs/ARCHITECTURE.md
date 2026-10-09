@@ -55,7 +55,7 @@ graph LR
         ScreenDown["ScreenDownMode (Sensory Walk)"]
         Journal["JournalView (Adventures & Notes)"]
         Studio["FieldStudioView (Specimen Art & Folios)"]
-        PlateModal["BotanicalPlateModal (Inspection)"]
+        PlateDrawer["InlineReferenceDrawer (Card Accordion)"]
         Philosophy["ObjectiveBasisModal (Philosophy & Science)"]
         Settings["AISettingsModal"]
     end
@@ -75,7 +75,7 @@ graph LR
     Active --> ScreenDown
     Active --> DexieDB
     DexieDB --> Journal
-    Journal --> PlateModal
+    Journal --> PlateDrawer
     Journal -.->|Illustrate in Studio| Studio
     Studio <--> DexieDB
     Studio <--> SketchGen

@@ -98,7 +98,7 @@ FieldQuest stands in direct opposition to endless scrolling, digital fatigue, an
 - Built on Dexie (IndexedDB).
 - Clean two-tab architecture: **Adventures History** and **Field Notes & Observations**.
 - Observation notes format with structured naturalist formatting (bracket headers, markdown subheadings, anatomical bullet points).
-- Interactive **Botanical Reference Plate Inspection Modal** opening directly over notes without redirecting.
+- Interactive **Botanical Reference Plate Inline Drawer** expanding seamlessly inside the observation card without modals or redirects.
 - Complete data portability: JSON export and file upload backup restoration with transactional safety.
 - Operational completely offline with zero network connectivity required.
 
