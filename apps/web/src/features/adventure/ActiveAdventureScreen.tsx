@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Clock,
@@ -17,6 +17,8 @@ import {
   BookOpen,
   Feather,
   Palette,
+  Wand2,
+  RotateCcw,
 } from 'lucide-react';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 import { ScreenDownOverlay } from './ScreenDownOverlay.js';
@@ -28,6 +30,7 @@ import {
   generateBotanicalSketch,
   getMatchingBotanicalPlate,
   BOTANICAL_FIELD_PLATES,
+  generateCustomBotanicalIllustration,
 } from '../../lib/sketch-generator.js';
 import { requestMissionScaffold } from '../../services/api.js';
 import { NatureMission } from '../../types/index.js';
@@ -211,7 +214,12 @@ export const ActiveAdventureScreen: React.FC = () => {
   const [scaffoldModelUsed, setScaffoldModelUsed] = useState<string | null>(null);
   const [showCustomIllustrator, setShowCustomIllustrator] = useState(false);
 
-  const applyCustomPlate = (imageUrl: string, title?: string, desc?: string) => {
+  const applyCustomPlate = (
+    imageUrl: string,
+    title?: string,
+    desc?: string,
+    customDetails?: { title: string; description: string }[]
+  ) => {
     const curMission = session?.missions[currentMissionIndex];
     const customTitle = title || curMission?.title || 'Botanical Specimen';
     const criteriaDetails = (curMission?.observationCriteria && curMission.observationCriteria.length > 0)
@@ -233,11 +241,14 @@ export const ActiveAdventureScreen: React.FC = () => {
       description: desc || `Custom AI-synthesized botanical morphology reference plate for ${customTitle}.`,
       shortName: 'Custom AI',
       plateNumber: 'Plate AI',
-      details: criteriaDetails,
+      details: customDetails && customDetails.length > 0 ? customDetails : criteriaDetails,
       isCustomAI: true,
     });
     setReferencePlateId('custom-ai-plate');
   };
+
+  const lastSyncedMissionIdRef = useRef<string | null>(null);
+  const [isUpdatingPlateImage, setIsUpdatingPlateImage] = useState(false);
 
   // Timer interval
   useEffect(() => {
@@ -248,26 +259,81 @@ export const ActiveAdventureScreen: React.FC = () => {
     return () => clearInterval(interval);
   }, [session, isPaused, tickSecond]);
 
-  // Sync state when mission changes
+  // Sync state ONLY when changing mission index or session id
   useEffect(() => {
     if (session && session.missions[currentMissionIndex]) {
       const mission = session.missions[currentMissionIndex];
-      setNotes(mission.userNotes || '');
-      setPhotoUrl(mission.userPhotoUrl || undefined);
-      if (mission.userPhotoUrl) {
-        applyCustomPlate(mission.userPhotoUrl, mission.title, mission.userNotes);
-      } else {
-        setCustomPlate(null);
-        // Auto-suggest plate based on title and mission objective
-        const matched = getMatchingBotanicalPlate(
-          mission.objective,
-          mission.title,
-          session.environment
-        );
-        setReferencePlateId(matched.id);
+      if (lastSyncedMissionIdRef.current !== mission.id) {
+        lastSyncedMissionIdRef.current = mission.id;
+        setNotes(mission.userNotes || '');
+        setPhotoUrl(mission.userPhotoUrl || undefined);
+        if (mission.userPhotoUrl) {
+          applyCustomPlate(mission.userPhotoUrl, mission.title, mission.userNotes);
+        } else {
+          setCustomPlate(null);
+          // Auto-suggest plate based on title and mission objective
+          const matched = getMatchingBotanicalPlate(
+            mission.objective,
+            mission.title,
+            session.environment
+          );
+          setReferencePlateId(matched.id);
+        }
       }
     }
-  }, [session, currentMissionIndex]);
+  }, [currentMissionIndex, session?.id]);
+
+  const handleUpdateCurrentPlateWithAI = async () => {
+    const curMission = session?.missions[currentMissionIndex];
+    if (!curMission) return;
+    setIsUpdatingPlateImage(true);
+    try {
+      const subject = activePlate.title || curMission.title;
+      const newSeed = Math.floor(Math.random() * 899999) + 100000;
+      const res = await generateCustomBotanicalIllustration({
+        subject,
+        styleKey: 'vintage_plate',
+        seed: newSeed,
+        customPrompt: `${curMission.objective} ${curMission.observationCriteria?.join(' ') || ''}`,
+        engine: 'auto',
+      });
+      applyCustomPlate(res.url, subject, res.promptUsed);
+      setPhotoUrl(res.url);
+      updateCurrentMissionDraft(notes, res.url);
+    } catch (err) {
+      console.error('Failed to update plate image with AI:', err);
+      const available = BOTANICAL_FIELD_PLATES.filter(p => p.src !== activePlate.src);
+      const chosen = available[Math.floor(Math.random() * available.length)] || BOTANICAL_FIELD_PLATES[0];
+      applyCustomPlate(chosen.src, chosen.title, chosen.description, chosen.details);
+      setPhotoUrl(chosen.src);
+      updateCurrentMissionDraft(notes, chosen.src);
+    } finally {
+      setIsUpdatingPlateImage(false);
+    }
+  };
+
+  const handleUploadPlateImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const curMission = session?.missions[currentMissionIndex];
+    const file = e.target.files?.[0];
+    if (file && curMission) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        applyCustomPlate(base64, `${curMission.title} (Naturalist Photo)`, 'Custom uploaded specimen photo.');
+        setPhotoUrl(base64);
+        updateCurrentMissionDraft(notes, base64);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCyclePlateVariant = () => {
+    const available = BOTANICAL_FIELD_PLATES.filter(p => p.src !== activePlate.src);
+    const chosen = available[Math.floor(Math.random() * available.length)] || BOTANICAL_FIELD_PLATES[0];
+    applyCustomPlate(chosen.src, chosen.title, chosen.description, chosen.details);
+    setPhotoUrl(chosen.src);
+    updateCurrentMissionDraft(notes, chosen.src);
+  };
 
   // Check if all missions are done
   useEffect(() => {
@@ -502,8 +568,54 @@ export const ActiveAdventureScreen: React.FC = () => {
               ))}
             </div>
 
+            {/* Direct In-Place Plate Image Updater Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-3 p-2.5 rounded-2xl bg-forest-deep/5 border border-forest-deep/15">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-forest-deep">
+                <Sparkles className="w-4 h-4 text-moss-green" />
+                <span>Plate Specimen Image:</span>
+                {activePlate.isCustomAI && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700 text-white font-bold shadow-2xs">
+                    Custom AI Active
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  disabled={isUpdatingPlateImage}
+                  onClick={handleUpdateCurrentPlateWithAI}
+                  className="px-3.5 py-1.5 rounded-xl bg-forest-deep hover:bg-forest-dark text-paper-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                  title="Generate a fresh botanical illustration for this plate with AI"
+                >
+                  <Wand2 className={`w-3.5 h-3.5 text-leaf-accent ${isUpdatingPlateImage ? 'animate-spin' : ''}`} />
+                  <span>{isUpdatingPlateImage ? 'Synthesizing...' : '✨ Update Image with AI'}</span>
+                </button>
+
+                <label className="px-3 py-1.5 rounded-xl border border-border-subtle bg-white hover:bg-parchment-warm text-forest-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors shadow-2xs">
+                  <Camera className="w-3.5 h-3.5 text-moss-green" />
+                  <span>Upload Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleUploadPlateImage}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleCyclePlateVariant}
+                  className="px-3 py-1.5 rounded-xl border border-border-subtle bg-white hover:bg-parchment-warm text-forest-deep text-xs font-medium flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                  title="Cycle between alternative historical specimens"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-text-muted" />
+                  <span>Cycle Variant</span>
+                </button>
+              </div>
+            </div>
+
             {/* Reference Image View */}
-            <div className="rounded-2xl overflow-hidden border border-border-subtle mb-4 bg-parchment-warm">
+            <div className="rounded-2xl overflow-hidden border border-border-subtle mb-4 bg-parchment-warm relative group">
               <img
                 src={activePlate.src}
                 alt={activePlate.title}
@@ -512,6 +624,12 @@ export const ActiveAdventureScreen: React.FC = () => {
                 }}
                 className="w-full h-auto object-cover max-h-[460px]"
               />
+              {isUpdatingPlateImage && (
+                <div className="absolute inset-0 bg-forest-dark/60 backdrop-blur-xs flex flex-col items-center justify-center text-paper-white gap-2 z-10">
+                  <Wand2 className="w-8 h-8 animate-spin text-leaf-accent" />
+                  <span className="text-xs font-semibold">Synthesizing authentic botanical plate...</span>
+                </div>
+              )}
             </div>
 
             {/* Real-Time Diagnostic Details Breakdown */}
@@ -599,10 +717,8 @@ export const ActiveAdventureScreen: React.FC = () => {
           }}
           onSetAsReferencePlate={(plateUrl, plateTitle, prompt) => {
             applyCustomPlate(plateUrl, plateTitle || currentMission.title, prompt || notes);
-            if (!photoUrl) {
-              setPhotoUrl(plateUrl);
-              updateCurrentMissionDraft(notes, plateUrl);
-            }
+            setPhotoUrl(plateUrl);
+            updateCurrentMissionDraft(notes, plateUrl);
           }}
         />
       )}
@@ -821,7 +937,17 @@ export const ActiveAdventureScreen: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
+                  <button
+                    type="button"
+                    disabled={isUpdatingPlateImage}
+                    onClick={handleUpdateCurrentPlateWithAI}
+                    className="px-3 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
+                    title="Instantly generate and update current image with AI"
+                  >
+                    <Wand2 className={`w-3.5 h-3.5 text-leaf-accent ${isUpdatingPlateImage ? 'animate-spin' : ''}`} />
+                    <span>{isUpdatingPlateImage ? 'Updating...' : '✨ Update Image'}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowCustomIllustrator(true)}
@@ -834,9 +960,9 @@ export const ActiveAdventureScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowReferencePlate(true)}
-                    className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                    className="px-4 py-2 rounded-xl border border-border-subtle bg-parchment-warm text-forest-deep text-xs font-semibold hover:bg-paper-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
                   >
-                    <Image className="w-3.5 h-3.5 text-leaf-accent" />
+                    <Image className="w-3.5 h-3.5 text-moss-green" />
                     <span>Study {activePlate.plateNumber}</span>
                   </button>
                 </div>
