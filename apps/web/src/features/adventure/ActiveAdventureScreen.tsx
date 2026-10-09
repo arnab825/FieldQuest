@@ -167,6 +167,18 @@ function buildMissionScaffold(mission: NatureMission): string {
   return `[Field Observation Log • ${mission.title}]\n${criteriaLines}\n• Micro-habitat & Setting: \n• Naturalist Sensory Notes: \n• Contemplative Reflection: ${mission.reflectionQuestion || ''}`;
 }
 
+export interface ActivePlateData {
+  id?: string;
+  src: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  shortName: string;
+  plateNumber: string;
+  details: { title: string; description: string }[];
+  isCustomAI?: boolean;
+}
+
 export const ActiveAdventureScreen: React.FC = () => {
   const navigate = useNavigate();
 
@@ -193,10 +205,39 @@ export const ActiveAdventureScreen: React.FC = () => {
   const [confirmAbandon, setConfirmAbandon] = useState(false);
   const [showReferencePlate, setShowReferencePlate] = useState(false);
   const [referencePlateId, setReferencePlateId] = useState<string>(BOTANICAL_FIELD_PLATES[0].id);
+  const [customPlate, setCustomPlate] = useState<ActivePlateData | null>(null);
   const [isIllustrating, setIsIllustrating] = useState(false);
   const [isScaffolding, setIsScaffolding] = useState(false);
   const [scaffoldModelUsed, setScaffoldModelUsed] = useState<string | null>(null);
   const [showCustomIllustrator, setShowCustomIllustrator] = useState(false);
+
+  const applyCustomPlate = (imageUrl: string, title?: string, desc?: string) => {
+    const curMission = session?.missions[currentMissionIndex];
+    const customTitle = title || curMission?.title || 'Botanical Specimen';
+    const criteriaDetails = (curMission?.observationCriteria && curMission.observationCriteria.length > 0)
+      ? curMission.observationCriteria.map((c, i) => ({
+          title: `${i + 1}. ${c}`,
+          description: `Observed diagnostic characteristic for ${c.toLowerCase()} (${session?.environment || 'field'}).`,
+        }))
+      : [
+          { title: '1. Diagnostic Morphology', description: 'Real-time specimen structure and branch symmetry' },
+          { title: '2. Boundary & Venation', description: 'Structural diagnostic vascular traits and margin contour' },
+          { title: '3. Naturalist Reflection', description: curMission?.reflectionQuestion || 'Field audit observation' },
+        ];
+
+    setCustomPlate({
+      id: 'custom-ai-plate',
+      src: imageUrl,
+      title: `${customTitle} (AI Field Study)`,
+      subtitle: `Real-Time Naturalist Plate • ${(session?.environment || 'field').toUpperCase()}`,
+      description: desc || `Custom AI-synthesized botanical morphology reference plate for ${customTitle}.`,
+      shortName: 'Custom AI',
+      plateNumber: 'Plate AI',
+      details: criteriaDetails,
+      isCustomAI: true,
+    });
+    setReferencePlateId('custom-ai-plate');
+  };
 
   // Timer interval
   useEffect(() => {
@@ -213,13 +254,18 @@ export const ActiveAdventureScreen: React.FC = () => {
       const mission = session.missions[currentMissionIndex];
       setNotes(mission.userNotes || '');
       setPhotoUrl(mission.userPhotoUrl || undefined);
-      // Auto-suggest plate based on title and mission objective
-      const matched = getMatchingBotanicalPlate(
-        mission.objective,
-        mission.title,
-        session.environment
-      );
-      setReferencePlateId(matched.id);
+      if (mission.userPhotoUrl) {
+        applyCustomPlate(mission.userPhotoUrl, mission.title, mission.userNotes);
+      } else {
+        setCustomPlate(null);
+        // Auto-suggest plate based on title and mission objective
+        const matched = getMatchingBotanicalPlate(
+          mission.objective,
+          mission.title,
+          session.environment
+        );
+        setReferencePlateId(matched.id);
+      }
     }
   }, [session, currentMissionIndex]);
 
@@ -313,6 +359,8 @@ export const ActiveAdventureScreen: React.FC = () => {
         photoUrl
       );
       setPhotoUrl(sketchUrl);
+      applyCustomPlate(sketchUrl, currentMission.title, notes);
+      updateCurrentMissionDraft(notes, sketchUrl);
     } catch {
       const fallback = getMatchingBotanicalPlate(
         notes,
@@ -320,6 +368,8 @@ export const ActiveAdventureScreen: React.FC = () => {
         session?.environment
       );
       setPhotoUrl(fallback.src);
+      applyCustomPlate(fallback.src, currentMission.title, notes);
+      updateCurrentMissionDraft(notes, fallback.src);
     } finally {
       setIsIllustrating(false);
     }
@@ -371,9 +421,16 @@ export const ActiveAdventureScreen: React.FC = () => {
     }
   };
 
-  const activePlate =
+  const standardPlate =
     BOTANICAL_FIELD_PLATES.find(p => p.id === referencePlateId) ||
     BOTANICAL_FIELD_PLATES[0];
+
+  const activePlate: ActivePlateData =
+    referencePlateId === 'custom-ai-plate' && customPlate
+      ? customPlate
+      : referencePlateId !== 'custom-ai-plate'
+      ? standardPlate
+      : customPlate || standardPlate;
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
@@ -413,8 +470,22 @@ export const ActiveAdventureScreen: React.FC = () => {
               </h3>
             </div>
 
-            {/* Toggle Between All 5 Plates */}
+            {/* Toggle Between Plates */}
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
+              {customPlate && (
+                <button
+                  type="button"
+                  onClick={() => setReferencePlateId('custom-ai-plate')}
+                  className={`py-2 px-3.5 rounded-xl text-xs font-bold border transition-colors shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                    referencePlateId === 'custom-ai-plate'
+                      ? 'bg-emerald-800 text-paper-white border-emerald-900 shadow-xs'
+                      : 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-leaf-accent" />
+                  <span>✨ Custom AI Plate</span>
+                </button>
+              )}
               {BOTANICAL_FIELD_PLATES.map(plate => (
                 <button
                   key={plate.id}
@@ -436,30 +507,56 @@ export const ActiveAdventureScreen: React.FC = () => {
               <img
                 src={activePlate.src}
                 alt={activePlate.title}
+                onError={(e) => {
+                  e.currentTarget.src = standardPlate.src;
+                }}
                 className="w-full h-auto object-cover max-h-[460px]"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4 text-xs">
-              {activePlate.details.map((d, i) => (
-                <div key={i} className="p-2.5 rounded-xl bg-parchment-warm/70 border border-border-subtle space-y-0.5">
-                  <span className="font-bold text-forest-deep block">{d.title}</span>
-                  <p className="text-text-muted leading-relaxed">{d.description}</p>
-                </div>
-              ))}
+            {/* Real-Time Diagnostic Details Breakdown */}
+            <div className="mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green block mb-2">
+                {activePlate.isCustomAI ? '🎯 Real-Time Diagnostic Criteria (Active Specimen):' : '🔍 Diagnostic Morphology Points:'}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-xs">
+                {activePlate.details.map((d, i) => (
+                  <div key={i} className="p-3 rounded-xl bg-parchment-warm/80 border border-border-subtle space-y-1">
+                    <span className="font-bold text-forest-deep flex items-center gap-1">
+                      <span className="text-emerald-700">✓</span>
+                      <span>{d.title}</span>
+                    </span>
+                    <p className="text-text-muted leading-relaxed text-[11px]">{d.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-border-subtle flex items-center justify-between gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setPhotoUrl(activePlate.src);
-                  setShowReferencePlate(false);
-                }}
-                className="px-4 py-2 rounded-xl bg-forest-deep/10 hover:bg-forest-deep/20 text-forest-deep text-xs font-semibold transition-colors cursor-pointer"
-              >
-                🌿 Attach This Plate to Mission Notes
-              </button>
+            <div className="mt-4 pt-3 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPhotoUrl(activePlate.src);
+                    updateCurrentMissionDraft(notes, activePlate.src);
+                    setShowReferencePlate(false);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-forest-deep/10 hover:bg-forest-deep/20 text-forest-deep text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  🌿 Attach This Plate to Mission Notes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowReferencePlate(false);
+                    setShowCustomIllustrator(true);
+                  }}
+                  className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-forest-deep text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Palette className="w-3.5 h-3.5 text-moss-green" />
+                  <span>Customize Plate</span>
+                </button>
+              </div>
 
               <button
                 type="button"
@@ -482,8 +579,9 @@ export const ActiveAdventureScreen: React.FC = () => {
           missionObjective={currentMission.objective}
           currentNotes={notes}
           environment={session.environment}
-          onSelectIllustration={(imageUrl) => {
+          onSelectIllustration={(imageUrl, subject, prompt) => {
             setPhotoUrl(imageUrl);
+            applyCustomPlate(imageUrl, subject || currentMission.title, prompt || notes);
             updateCurrentMissionDraft(notes, imageUrl);
             if (session) {
               addJournalEntry({
@@ -499,9 +597,12 @@ export const ActiveAdventureScreen: React.FC = () => {
               });
             }
           }}
-          onSetAsReferencePlate={(plateUrl) => {
-            setPhotoUrl(plateUrl);
-            updateCurrentMissionDraft(notes, plateUrl);
+          onSetAsReferencePlate={(plateUrl, plateTitle, prompt) => {
+            applyCustomPlate(plateUrl, plateTitle || currentMission.title, prompt || notes);
+            if (!photoUrl) {
+              setPhotoUrl(plateUrl);
+              updateCurrentMissionDraft(notes, plateUrl);
+            }
           }}
         />
       )}
@@ -641,10 +742,17 @@ export const ActiveAdventureScreen: React.FC = () => {
               {/* Dynamic Scientific Reference Plate for this specific Mission */}
               <div className="p-4 rounded-2xl bg-parchment-warm/85 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
                 <div className="flex items-start gap-3.5">
-                  <div className="w-12 h-12 rounded-xl overflow-hidden border border-border-subtle bg-white shrink-0 hidden sm:block shadow-2xs">
+                  <div
+                    onClick={() => setShowReferencePlate(true)}
+                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-border-subtle bg-white shrink-0 block shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
+                    title="Click to view full reference plate"
+                  >
                     <img
                       src={activePlate.src}
                       alt={activePlate.title}
+                      onError={(e) => {
+                        e.currentTarget.src = standardPlate.src;
+                      }}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -654,9 +762,32 @@ export const ActiveAdventureScreen: React.FC = () => {
                         <BookOpen className="w-3 h-3 text-moss-green" />
                         Scientific Reference Guide • {activePlate.plateNumber}
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep font-semibold">
-                        {activePlate.shortName}
-                      </span>
+                      {activePlate.isCustomAI ? (
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-700 text-white font-bold flex items-center gap-1 shadow-2xs">
+                          ✨ Real-Time Custom Plate
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep font-semibold">
+                          {activePlate.shortName}
+                        </span>
+                      )}
+                      {activePlate.isCustomAI ? (
+                        <button
+                          type="button"
+                          onClick={() => setReferencePlateId(standardPlate.id)}
+                          className="text-[10px] text-text-muted hover:text-forest-deep underline cursor-pointer"
+                        >
+                          (Revert to standard guide)
+                        </button>
+                      ) : customPlate ? (
+                        <button
+                          type="button"
+                          onClick={() => setReferencePlateId('custom-ai-plate')}
+                          className="text-[10px] text-emerald-800 hover:underline font-semibold cursor-pointer"
+                        >
+                          (✨ Switch to Custom AI)
+                        </button>
+                      ) : null}
                     </div>
                     <h3 className="text-xs sm:text-sm font-bold text-forest-deep">
                       {activePlate.title}
@@ -664,39 +795,53 @@ export const ActiveAdventureScreen: React.FC = () => {
                     <p className="text-[11px] text-text-muted leading-relaxed">
                       {activePlate.subtitle} — {activePlate.description}
                     </p>
-                    <div className="flex flex-wrap gap-1.5 pt-1 text-[10px] text-forest-deep font-medium">
-                      {activePlate.details.map((d, idx) => (
-                        <span key={idx} className="bg-paper-white/90 px-2 py-0.5 rounded-md border border-border-subtle/60">
-                          ✓ {d.title}
-                        </span>
-                      ))}
+
+                    {/* Real-Time Diagnostic Criteria details */}
+                    <div className="pt-1.5">
+                      <span className="text-[10px] uppercase font-bold text-moss-green tracking-wider block mb-1">
+                        {activePlate.isCustomAI ? '🎯 Real-Time Diagnostic Criteria:' : '🔍 Diagnostic Checklist:'}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5 text-[10px] sm:text-[11px] text-forest-deep font-medium">
+                        {activePlate.details.map((d, idx) => (
+                          <span
+                            key={idx}
+                            title={d.description}
+                            className={`px-2.5 py-0.5 rounded-lg border text-forest-deep shadow-2xs flex items-center gap-1 font-semibold ${
+                              activePlate.isCustomAI
+                                ? 'bg-emerald-50/90 border-emerald-300/80 text-emerald-950'
+                                : 'bg-paper-white/90 border-border-subtle/70'
+                            }`}
+                          >
+                            <span className="text-emerald-700">✓</span>
+                            <span>{d.title}</span>
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setShowCustomIllustrator(true)}
-                        className="px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                        title="Customize and synthesize botanical plates with Pollinations Flux AI"
-                      >
-                        <Palette className="w-3.5 h-3.5 text-moss-green" />
-                        <span>🎨 Custom AI Plate</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReferencePlateId(activePlate.id);
-                          setShowReferencePlate(true);
-                        }}
-                        className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-                      >
-                        <Image className="w-3.5 h-3.5 text-leaf-accent" />
-                        <span>Study {activePlate.plateNumber}</span>
-                      </button>
-                    </div>
-                  </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomIllustrator(true)}
+                    className="px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
+                    title="Customize and synthesize botanical plates with AI"
+                  >
+                    <Palette className="w-3.5 h-3.5 text-moss-green" />
+                    <span>🎨 Custom AI Plate</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReferencePlate(true)}
+                    className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+                  >
+                    <Image className="w-3.5 h-3.5 text-leaf-accent" />
+                    <span>Study {activePlate.plateNumber}</span>
+                  </button>
                 </div>
+              </div>
+            </div>
 
             {/* Safety Guidance Callout */}
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-3">

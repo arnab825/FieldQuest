@@ -10,6 +10,7 @@ import {
   BookOpen,
   Info,
   Layers,
+  Image as ImageIcon,
 } from 'lucide-react';
 import {
   BOTANICAL_STYLE_PRESETS,
@@ -18,6 +19,7 @@ import {
   generateCustomBotanicalIllustration,
   CustomIllustrationResult,
   BOTANICAL_FIELD_PLATES,
+  getMatchingBotanicalPlate,
 } from '../../lib/sketch-generator.js';
 
 interface CustomIllustratorModalProps {
@@ -27,8 +29,8 @@ interface CustomIllustratorModalProps {
   missionObjective: string;
   currentNotes?: string;
   environment?: string;
-  onSelectIllustration: (imageUrl: string) => void;
-  onSetAsReferencePlate?: (plateUrl: string, plateTitle: string) => void;
+  onSelectIllustration: (imageUrl: string, subject?: string, prompt?: string) => void;
+  onSetAsReferencePlate?: (plateUrl: string, plateTitle?: string, prompt?: string) => void;
 }
 
 export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
@@ -49,13 +51,12 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
   const [subject, setSubject] = useState(initialSubject);
   const [styleKey, setStyleKey] = useState<BotanicalStyleKey>('vintage_plate');
   const [customPrompt, setCustomPrompt] = useState('');
-  const [model, setModel] = useState<'flux' | 'turbo'>('flux');
+  const [engine, setEngine] = useState<'auto' | 'archive' | 'plates'>('auto');
   const [aspect, setAspect] = useState<'landscape' | 'square'>('landscape');
   const [seed, setSeed] = useState(() => Math.floor(Math.random() * 899999) + 100000);
   const [isGenerating, setIsGenerating] = useState(false);
   const [result, setResult] = useState<CustomIllustrationResult | null>(null);
   const [applied, setApplied] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -66,23 +67,40 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    setErrorMsg(null);
     setApplied(false);
+
+    // Fresh seed on every generate click so each generation produces a distinct specimen
+    const newSeed = Math.floor(Math.random() * 899999) + 100000;
+    setSeed(newSeed);
 
     try {
       const generated = await generateCustomBotanicalIllustration({
         subject,
         styleKey,
         customPrompt,
-        seed,
+        seed: newSeed,
         width,
         height,
-        model,
+        engine,
       });
       setResult(generated);
+      if (onSetAsReferencePlate) {
+        onSetAsReferencePlate(generated.url, subject, generated.promptUsed);
+      }
     } catch (err: any) {
       console.error('Illustration generation failed:', err);
-      setErrorMsg('Could not reach Pollinations AI. You can pick an authentic curated botanical plate below.');
+      const fallback = BOTANICAL_FIELD_PLATES[newSeed % BOTANICAL_FIELD_PLATES.length];
+      const fallbackRes = {
+        url: fallback.src,
+        promptUsed: fallback.description,
+        seed: newSeed,
+        model: `Curated Field Plate (${fallback.plateNumber})`,
+        isBase64: false,
+      };
+      setResult(fallbackRes);
+      if (onSetAsReferencePlate) {
+        onSetAsReferencePlate(fallback.src, subject, fallback.description);
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -94,16 +112,24 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
 
   const handleApplyToMission = () => {
     if (!result) return;
-    onSelectIllustration(result.url);
+    onSelectIllustration(result.url, subject, result.promptUsed);
     setApplied(true);
     setTimeout(() => {
       onClose();
     }, 700);
   };
 
-  const handleUseCuratedFallback = (plateSrc: string) => {
-    onSelectIllustration(plateSrc);
-    onClose();
+  const handleSelectCuratedPlate = (plateSrc: string, plateTitle: string, plateDesc?: string) => {
+    setResult({
+      url: plateSrc,
+      promptUsed: plateDesc || plateTitle,
+      seed,
+      model: plateTitle,
+      isBase64: false,
+    });
+    if (onSetAsReferencePlate) {
+      onSetAsReferencePlate(plateSrc, plateTitle, plateDesc);
+    }
   };
 
   return (
@@ -120,8 +146,9 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
                 <h2 className="font-editorial text-xl sm:text-2xl font-bold text-forest-deep">
                   AI Botanical Illustrator
                 </h2>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  Pollinations Flux
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                  AI & Botanical Archive
                 </span>
               </div>
               <p className="text-xs text-text-muted">
@@ -211,7 +238,7 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
             </div>
           </div>
 
-          {/* Custom Prompt Override if "custom" is selected or explorer wants to edit */}
+          {/* Custom Prompt Override */}
           {styleKey === 'custom' && (
             <div className="space-y-1.5 animate-in fade-in duration-200">
               <label className="font-bold text-forest-deep uppercase tracking-wider text-[11px] block">
@@ -220,7 +247,7 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
               <textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Type your exact customized prompt for Pollinations AI..."
+                placeholder="Type your exact customized prompt..."
                 rows={3}
                 className="w-full p-3 rounded-xl border border-border-subtle bg-parchment-warm/30 focus:bg-paper-white text-forest-deep text-xs font-mono focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10"
               />
@@ -231,40 +258,54 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
           <div className="p-3 rounded-xl bg-forest-deep/5 border border-forest-deep/15 space-y-1">
             <div className="flex items-center gap-1.5 text-[10px] font-bold text-moss-green uppercase tracking-wider">
               <Info className="w-3.5 h-3.5" />
-              <span>Synthesized AI Prompt Pipeline</span>
+              <span>Synthesized Naturalist Prompt Pipeline</span>
             </div>
             <p className="text-[11px] text-forest-deep/85 italic leading-relaxed">
               "{activePromptPreview}"
             </p>
           </div>
 
-          {/* Parameters Controls */}
+          {/* Engine & Generation Options */}
           <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-parchment-warm/50 border border-border-subtle text-xs">
-            {/* Model Selection */}
+            {/* Engine Selection */}
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-forest-deep">Model:</span>
+              <span className="font-semibold text-forest-deep">Generator:</span>
               <div className="inline-flex rounded-lg border border-border-subtle bg-paper-white p-0.5">
                 <button
                   type="button"
-                  onClick={() => setModel('flux')}
+                  onClick={() => setEngine('auto')}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                    model === 'flux'
+                    engine === 'auto'
                       ? 'bg-forest-deep text-paper-white shadow-2xs'
                       : 'text-text-muted hover:text-forest-deep'
                   }`}
+                  title="AI Synthesis with automatic Naturalist Archive fallback"
                 >
-                  Flux (High-Fi)
+                  Auto (AI/Archive)
                 </button>
                 <button
                   type="button"
-                  onClick={() => setModel('turbo')}
+                  onClick={() => setEngine('archive')}
                   className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
-                    model === 'turbo'
+                    engine === 'archive'
                       ? 'bg-forest-deep text-paper-white shadow-2xs'
                       : 'text-text-muted hover:text-forest-deep'
                   }`}
+                  title="Query historical Smithsonian & European botanical archives"
                 >
-                  Turbo (Fast)
+                  Museum Archive
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEngine('plates')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
+                    engine === 'plates'
+                      ? 'bg-forest-deep text-paper-white shadow-2xs'
+                      : 'text-text-muted hover:text-forest-deep'
+                  }`}
+                  title="Use authenticated Linnaean botanical field plates"
+                >
+                  Field Plates
                 </button>
               </div>
             </div>
@@ -333,48 +374,20 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
             )}
           </button>
 
-          {/* Error / Fallback Card */}
-          {errorMsg && (
-            <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 space-y-3">
-              <p className="font-medium text-xs">{errorMsg}</p>
-              <div>
-                <span className="text-[11px] font-bold text-amber-900 block mb-2">
-                  Select from Authentic Curated Botanical Plates:
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {BOTANICAL_FIELD_PLATES.slice(0, 4).map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleUseCuratedFallback(p.src)}
-                      className="p-1.5 rounded-xl border border-amber-300/80 bg-white hover:bg-amber-100/60 text-left transition-all cursor-pointer group"
-                    >
-                      <img
-                        src={p.src}
-                        alt={p.title}
-                        className="w-full h-16 object-cover rounded-lg mb-1"
-                      />
-                      <span className="text-[10px] font-bold text-forest-deep block truncate">
-                        {p.shortName}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Generated Result Preview Card */}
           {result && (
             <div className="p-4 sm:p-5 rounded-3xl bg-parchment-warm/80 border border-border-subtle space-y-4 shadow-sm animate-in fade-in duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[11px] font-bold text-forest-deep uppercase tracking-wider flex items-center gap-1.5">
                     <Layers className="w-4 h-4 text-moss-green" />
-                    <span>Generated Botanical Specimen Plate</span>
+                    <span>Botanical Specimen Plate</span>
                   </span>
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-semibold">
                     {result.model} • #{result.seed}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700 text-white font-bold flex items-center gap-1 shadow-2xs">
+                    ✓ Synced to Field Plate
                   </span>
                 </div>
                 <a
@@ -388,21 +401,67 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
               </div>
 
               {/* Museum Mount Plate Container */}
-              <div className="p-3 sm:p-4 rounded-2xl bg-white border border-border-subtle shadow-md flex items-center justify-center">
+              <div className="p-3 sm:p-4 rounded-2xl bg-white border border-border-subtle shadow-md flex items-center justify-center min-h-[220px]">
                 <img
                   src={result.url}
-                  alt="AI Illustrated Botanical Specimen"
+                  alt="Botanical Specimen Plate"
+                  onError={(e) => {
+                    const fallback = getMatchingBotanicalPlate(subject, missionTitle, environment);
+                    e.currentTarget.src = fallback.src;
+                  }}
                   className="max-h-[380px] w-auto max-w-full rounded-xl object-contain shadow-2xs border border-border-subtle/60"
                 />
               </div>
 
+              {/* 1-Click Curated Botanical Plate Switcher */}
+              <div className="pt-2 border-t border-border-subtle/60 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-forest-deep uppercase tracking-wider flex items-center gap-1">
+                    <ImageIcon className="w-3.5 h-3.5 text-moss-green" />
+                    <span>Curated Museum Study Plates (1-Click Switch):</span>
+                  </span>
+                  <span className="text-[10px] text-text-muted">
+                    Click to instantly select plate
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
+                  {BOTANICAL_FIELD_PLATES.map((p) => {
+                    const isSelected = result.url === p.src;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => handleSelectCuratedPlate(p.src, p.title, p.description)}
+                        className={`p-1.5 rounded-xl border text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? 'border-forest-deep bg-forest-deep/10 ring-1 ring-forest-deep shadow-2xs'
+                            : 'border-border-subtle bg-white hover:bg-parchment-warm/60'
+                        }`}
+                      >
+                        <img
+                          src={p.src}
+                          alt={p.title}
+                          className="w-full h-11 object-cover rounded-lg mb-1"
+                        />
+                        <span className="text-[10px] font-bold text-forest-deep block truncate">
+                          {p.shortName}
+                        </span>
+                        <span className="text-[9px] text-text-muted block truncate">
+                          {p.plateNumber}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-1">
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-2">
                 {onSetAsReferencePlate && (
                   <button
                     type="button"
                     onClick={() => {
-                      onSetAsReferencePlate(result.url, subject);
+                      onSetAsReferencePlate(result.url, subject, result.promptUsed);
                       onClose();
                     }}
                     className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-forest-deep text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"

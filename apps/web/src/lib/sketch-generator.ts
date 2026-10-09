@@ -376,15 +376,14 @@ export async function generateBotanicalSketch(
 
   const combined = `${title || ''} ${environment || ''} ${cleanText}`.toLowerCase();
 
-  // 1. Try Pollinations AI with Flux model
+  // 1. Try Pollinations AI (clean URL without paywalled params)
   try {
     const subject = cleanText || title || matchedPlate.title;
-    const prompt = `vintage botanical watercolor specimen of ${subject}, antique naturalist scientific plate on aged parchment, botanical morphology study, elegant flora art, detailed biological illustration`;
-    const seed = Math.floor(Math.random() * 899999) + 100000;
-    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=800&height=600&nologo=true&seed=${seed}`;
+    const cleanPrompt = `vintage botanical watercolor specimen of ${subject}, antique naturalist scientific plate on aged parchment, botanical morphology study, elegant flora art, detailed biological illustration`;
+    const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt.slice(0, 160))}`;
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 12000);
+    const timer = setTimeout(() => controller.abort(), 8000);
     const res = await fetch(pollUrl, { signal: controller.signal });
     clearTimeout(timer);
 
@@ -400,31 +399,29 @@ export async function generateBotanicalSketch(
       }
     }
   } catch {
-    // Pollinations AI unavailable or slow; proceed to open historical botanical archive
+    // Pollinations AI unavailable or paywalled; proceed to open historical botanical archive
   }
 
-  // 2. Query open naturalist botanical archive
-  let queryKeyword = 'vintage botanical watercolor specimen';
+  // 2. Query open naturalist botanical archive (Wikimedia Commons)
+  let queryKeyword = 'botanical illustration plate';
   if (combined.includes('margin') || combined.includes('serrate') || combined.includes('dentate') || combined.includes('lobed')) {
-    queryKeyword = 'botanical illustration leaf margin morphology';
+    queryKeyword = 'leaf margin botanical';
   } else if (combined.includes('cuticle') || combined.includes('wax') || combined.includes('trichome') || combined.includes('stomata')) {
-    queryKeyword = 'botanical illustration leaf microscopic anatomy';
+    queryKeyword = 'leaf anatomy';
   } else if (combined.includes('leaf') || combined.includes('symmetry') || combined.includes('vein')) {
-    queryKeyword = 'botanical illustration leaf specimen';
+    queryKeyword = 'leaf venation';
   } else if (combined.includes('bark') || combined.includes('tree') || combined.includes('lichen')) {
-    queryKeyword = 'botanical illustration tree bark moss';
+    queryKeyword = 'tree bark';
   } else if (combined.includes('canopy') || combined.includes('bird') || combined.includes('sound') || combined.includes('acoustic')) {
     queryKeyword = 'natural history bird illustration';
-  } else if (combined.includes('urban') || combined.includes('city') || combined.includes('wall') || combined.includes('pavement')) {
-    queryKeyword = 'botanical illustration weed pavement flora';
-  } else if (combined.includes('flower') || combined.includes('petal') || combined.includes('garden')) {
-    queryKeyword = 'botanical watercolor flower specimen';
+  } else if (combined.includes('flower') || combined.includes('petal') || combined.includes('herbarium')) {
+    queryKeyword = 'herbarium specimen plant';
   }
 
   try {
-    const wmUrl = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+    const wmUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
       queryKeyword
-    )}&gsrnamespace=6&prop=pageimages&pithumbsize=960&format=json&origin=*`;
+    )}&gsrnamespace=6&gsrlimit=20&prop=pageimages&pithumbsize=960&format=json&origin=*`;
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 6000);
@@ -472,7 +469,7 @@ export async function generateBotanicalSketch(
     console.warn('Archive illustration search error or timeout:', err);
   }
 
-  // 3. Fallback: Authentically matched botanical field plate for this exact observation
+  // 3. Guaranteed Fallback: Authentically matched botanical field plate
   const alternativePlates = BOTANICAL_FIELD_PLATES.filter((p) => p.src !== currentPhotoUrl);
   if (alternativePlates.length > 0 && currentPhotoUrl === matchedPlate.src) {
     const nextPlate = alternativePlates[Math.floor(Math.random() * alternativePlates.length)];
@@ -555,7 +552,7 @@ export interface CustomIllustrationRequest {
   seed?: number;
   width?: number;
   height?: number;
-  model?: 'flux' | 'turbo';
+  engine?: 'auto' | 'archive' | 'plates';
 }
 
 export interface CustomIllustrationResult {
@@ -583,49 +580,156 @@ export async function generateCustomBotanicalIllustration(
   request: CustomIllustrationRequest
 ): Promise<CustomIllustrationResult> {
   const seed = request.seed || Math.floor(Math.random() * 899999) + 100000;
-  const width = request.width || 800;
-  const height = request.height || 600;
-  const model = request.model || 'flux';
   const prompt = buildCustomPrompt(request.subject, request.styleKey, request.customPrompt);
+  const matchedPlate = getMatchingBotanicalPlate(request.subject, '', '');
 
-  const pollUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    prompt
-  )}?model=${model}&width=${width}&height=${height}&nologo=true&seed=${seed}`;
+  // If user explicitly requested curated museum plates:
+  if (request.engine === 'plates') {
+    // Pick from curated plates using seed for variety
+    const chosenCurated = BOTANICAL_FIELD_PLATES[seed % BOTANICAL_FIELD_PLATES.length];
+    return {
+      url: chosenCurated.src,
+      promptUsed: prompt,
+      seed,
+      model: `Curated Field Plate (${chosenCurated.plateNumber})`,
+      isBase64: false,
+    };
+  }
 
+  // Determine targeted keyword for archive search based on style preset and subject
+  let archiveKeyword = 'botanical illustration plate leaf';
+  if (request.styleKey === 'microscopic') {
+    archiveKeyword = 'leaf anatomy';
+  } else if (request.styleKey === 'herbarium') {
+    archiveKeyword = 'herbarium specimen plant';
+  } else if (request.styleKey === 'journal_sketch') {
+    archiveKeyword = 'botanical watercolor';
+  } else if (request.styleKey === 'copperplate') {
+    archiveKeyword = 'botanical engraving';
+  } else {
+    // Check subject features
+    const combined = `${request.subject} ${request.customPrompt || ''}`.toLowerCase();
+    if (combined.includes('margin') || combined.includes('serrate') || combined.includes('dentate') || combined.includes('lobed')) {
+      archiveKeyword = 'leaf margin botanical';
+    } else if (combined.includes('cuticle') || combined.includes('wax') || combined.includes('trichome') || combined.includes('stomata')) {
+      archiveKeyword = 'leaf anatomy';
+    } else if (combined.includes('bark') || combined.includes('tree') || combined.includes('lichen')) {
+      archiveKeyword = 'tree bark';
+    } else if (combined.includes('canopy') || combined.includes('bird') || combined.includes('sound')) {
+      archiveKeyword = 'natural history bird illustration';
+    } else if (combined.includes('flower') || combined.includes('petal') || combined.includes('herbarium')) {
+      archiveKeyword = 'herbarium specimen plant';
+    } else if (combined.includes('leaf') || combined.includes('symmetry') || combined.includes('vein')) {
+      archiveKeyword = 'leaf venation';
+    }
+  }
+
+  // 1. Try Pollinations AI (clean URL, no paywalled parameters) if engine is 'auto'
+  if (request.engine !== 'archive') {
+    try {
+      const cleanPrompt = encodeURIComponent(prompt.slice(0, 160));
+      const pollUrl = `https://image.pollinations.ai/prompt/${cleanPrompt}`;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+      const res = await fetch(pollUrl, { signal: controller.signal });
+      clearTimeout(timer);
+
+      if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
+        const blob = await res.blob();
+        if (blob.size > 2000) {
+          const base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string) || pollUrl);
+            reader.onerror = () => resolve(pollUrl);
+            reader.readAsDataURL(blob);
+          });
+          return {
+            url: base64,
+            promptUsed: prompt,
+            seed,
+            model: 'Pollinations AI (Flux)',
+            isBase64: true,
+          };
+        }
+      }
+    } catch {
+      // Pollinations AI unavailable or paywalled; proceed to archive
+    }
+  }
+
+  // 2. Query open naturalist botanical archive (Wikimedia Commons) with 20 results
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 16000);
-    const res = await fetch(pollUrl, { signal: controller.signal });
-    clearTimeout(timer);
+    const wmUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(
+      archiveKeyword
+    )}&gsrnamespace=6&gsrlimit=20&prop=pageimages&pithumbsize=960&format=json&origin=*`;
 
-    if (res.ok && res.headers.get('content-type')?.startsWith('image/')) {
-      const blob = await res.blob();
-      if (blob.size > 2000) {
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string) || pollUrl);
-          reader.onerror = () => resolve(pollUrl);
-          reader.readAsDataURL(blob);
-        });
-        return {
-          url: base64,
-          promptUsed: prompt,
-          seed,
-          model,
-          isBase64: true,
-        };
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    const res = await fetch(wmUrl, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      const pages = Object.values(data?.query?.pages || {});
+      const candidates = pages
+        .map((p: any) => p.thumbnail?.source)
+        .filter(
+          (src: string) =>
+            src &&
+            !src.includes('.pdf') &&
+            !src.includes('.djvu') &&
+            !src.includes('.gif')
+        );
+
+      if (candidates.length > 0) {
+        // Use seed to deterministically and diversely select among all 20 candidates
+        const chosenUrl = candidates[seed % candidates.length];
+        try {
+          const imgRes = await fetch(chosenUrl);
+          if (imgRes.ok) {
+            const blob = await imgRes.blob();
+            if (blob.size > 2000 && blob.type.startsWith('image/')) {
+              const base64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve((reader.result as string) || chosenUrl);
+                reader.onerror = () => resolve(chosenUrl);
+                reader.readAsDataURL(blob);
+              });
+              return {
+                url: base64,
+                promptUsed: prompt,
+                seed,
+                model: `Naturalist Archive #${(seed % candidates.length) + 1}`,
+                isBase64: true,
+              };
+            }
+          }
+        } catch {
+          return {
+            url: chosenUrl,
+            promptUsed: prompt,
+            seed,
+            model: `Naturalist Archive #${(seed % candidates.length) + 1}`,
+            isBase64: false,
+          };
+        }
       }
     }
   } catch (err) {
-    console.warn('[FieldQuest AI] Custom illustration fetch error:', err);
+    console.warn('[FieldQuest AI] Archive fetch error:', err);
   }
 
-  // If conversion failed or network timed out, return direct Pollinations URL so browser can still render it
+  // 3. Guaranteed Infallible Fallback: Authentic Curated Botanical Field Plate
+  const fallbackPlate = BOTANICAL_FIELD_PLATES[seed % BOTANICAL_FIELD_PLATES.length] || matchedPlate;
   return {
-    url: pollUrl,
+    url: fallbackPlate.src,
     promptUsed: prompt,
     seed,
-    model,
+    model: `Botanical Field Plate (${fallbackPlate.plateNumber})`,
     isBase64: false,
   };
 }
