@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
 import { requestLogger } from './middleware/logger.middleware.js';
-import { apiRateLimiter } from './middleware/rate-limit.middleware.js';
+import { apiRateLimiter, missionRateLimiter } from './middleware/rate-limit.middleware.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { healthRouter } from './routes/health.routes.js';
 import { aiRouter } from './routes/ai.routes.js';
@@ -13,6 +13,11 @@ export function createApp() {
 
   // Basic security and parsing
   app.disable('x-powered-by');
+
+  // Trust first proxy in production (Render, Railway, Nginx, Caddy, Cloudflare)
+  if (config.nodeEnv === 'production') {
+    app.set('trust proxy', 1);
+  }
   
   // CORS configuration
   const allowedOrigins = config.clientOrigin.split(',').map(s => s.trim());
@@ -57,7 +62,7 @@ export function createApp() {
   // Routes
   app.use('/api/v1/health', healthRouter);
   app.use('/api/v1/ai', aiRouter);
-  app.use('/api/v1/missions', missionRouter);
+  app.use('/api/v1/missions', missionRateLimiter, missionRouter);
 
   // Centralized Error Handling
   app.use(errorHandler);

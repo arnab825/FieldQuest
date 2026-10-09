@@ -14,6 +14,8 @@ import {
   Upload,
   Cloud,
   Layers,
+  Sparkles,
+  Shield,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIProviderStatus } from '../../types/index.js';
@@ -237,6 +239,10 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-forest-deep/10 text-forest-deep">
                     Auto-Failover Protection
                   </span>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
+                    <Shield className="w-2.5 h-2.5 text-amber-800" />
+                    <span>Rate-Limit Protected</span>
+                  </span>
                 </div>
               </div>
 
@@ -267,9 +273,14 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 <p className="text-[11px] text-text-muted leading-relaxed">
                   Connects to your local or containerized Ollama instance running open-weight models (Qwen, Gemma, Llama).
                 </p>
-                <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-forest-deep/10 text-forest-deep">
-                  Self-Hosted & Private
-                </span>
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="inline-block text-[10px] font-bold px-2 py-0.5 rounded-md bg-forest-deep/10 text-forest-deep">
+                    Self-Hosted & Private
+                  </span>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                    Unlimited • No Rate Limits
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -285,6 +296,37 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
                   Zero Downtime
                 </span>
+              </div>
+
+              {/* AI Suggestion Box: Pro-Tip to use Local for Best Experience */}
+              <div className="p-3.5 rounded-xl bg-forest-deep/5 border border-forest-deep/15 space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="text-[11px] font-bold text-forest-deep flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-moss-green" />
+                    <span>AI Recommendation for Best Experience</span>
+                  </span>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep flex items-center gap-1">
+                    <Shield className="w-2.5 h-2.5 text-forest-deep" />
+                    <span>Rate-Limiter Active</span>
+                  </span>
+                </div>
+                <p className="text-[11px] text-text-muted leading-relaxed">
+                  {aiStatus?.suggestion ||
+                    "Want an even better experience? For lower latency, zero rate limits, and 100% private offline exploration, we recommend running Local AI (Ollama with qwen2.5:3b)."}
+                </p>
+                <div className="flex items-center justify-between pt-1 border-t border-border-subtle/40 flex-wrap gap-2">
+                  <span className="text-[10px] text-text-muted font-mono">
+                    Production cap: {aiStatus?.rateLimit?.missionsPerMinute || 15} quests / min per IP
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMode('ollama')}
+                    className="text-[11px] font-bold text-forest-deep hover:text-moss-green hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Switch to Local AI</span>
+                    <span aria-hidden="true">&rarr;</span>
+                  </button>
+                </div>
               </div>
 
               {/* Visual Pipeline Flow */}

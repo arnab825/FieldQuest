@@ -33,7 +33,11 @@ import {
 import { requestGenerateMissions, fetchAIStatus } from '../../services/api.js';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 
-export const AdventureSetupForm: React.FC = () => {
+interface AdventureSetupFormProps {
+  onOpenSettings?: () => void;
+}
+
+export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSettings }) => {
   const navigate = useNavigate();
   const startSession = useAdventureSessionStore(s => s.startSession);
 
@@ -411,22 +415,44 @@ export const AdventureSetupForm: React.FC = () => {
 
         {/* Error Notice */}
         {generateMutation.isError && (
-          <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-900 text-xs sm:text-sm space-y-2">
+          <div className="p-4 rounded-xl border border-amber-300 bg-amber-50/90 text-amber-950 text-xs sm:text-sm space-y-2.5">
             <div className="flex items-center gap-2 font-semibold">
-              <AlertCircle className="w-4 h-4 text-red-700" />
-              <span>Mission Generation Encountered an Issue</span>
+              <AlertCircle className="w-4 h-4 text-amber-700" />
+              <span>
+                {(generateMutation.error as any)?.code === 'RATE_LIMIT_EXCEEDED' ||
+                (generateMutation.error as any)?.message?.toLowerCase().includes('rate limit')
+                  ? 'Production Rate Limit Reached'
+                  : 'Mission Generation Notice'}
+              </span>
             </div>
-            <p className="text-red-800">
-              {(generateMutation.error as any)?.message || 'Service unavailable'}
+            <p className="text-amber-900 leading-relaxed">
+              {(generateMutation.error as any)?.message || 'Service temporarily busy.'}
             </p>
-            <div className="pt-2 flex gap-3">
+            <div className="p-2.5 rounded-lg bg-amber-100/70 text-amber-950 text-xs flex items-start gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+              <span>
+                <strong>AI Recommendation:</strong>{' '}
+                {(generateMutation.error as any)?.suggestion ||
+                  'For zero rate limits, lower latency, and 100% private offline exploration, use Local AI (Ollama with qwen2.5:3b).'}
+              </span>
+            </div>
+            <div className="pt-1 flex flex-wrap gap-2">
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  className="px-3 py-1.5 rounded-lg bg-forest-deep text-paper-white font-medium hover:bg-forest-dark transition-colors text-xs cursor-pointer"
+                >
+                  Configure Local AI
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   setForcedDemoMode(true);
                   handleSubmit(new Event('submit') as any);
                 }}
-                className="px-3 py-1.5 rounded-lg bg-red-800 text-white font-medium hover:bg-red-900 transition-colors text-xs cursor-pointer"
+                className="px-3 py-1.5 rounded-lg bg-amber-800 text-white font-medium hover:bg-amber-900 transition-colors text-xs cursor-pointer"
               >
                 Run in Demo Mode Instead
               </button>
@@ -453,6 +479,26 @@ export const AdventureSetupForm: React.FC = () => {
               </>
             )}
           </button>
+        </div>
+
+        {/* Subtle AI Recommendation Footnote */}
+        <div className="pt-2 text-center space-y-1">
+          <p className="text-[11px] text-text-muted">
+            ✨ Powered by Production Cloud AI with failover & rate-limit protection.
+          </p>
+          {onOpenSettings && (
+            <p className="text-[11px] text-text-muted">
+              Want lower latency & unlimited generations?{' '}
+              <button
+                type="button"
+                onClick={onOpenSettings}
+                className="text-forest-deep font-semibold underline hover:text-moss-green cursor-pointer inline-flex items-center gap-0.5"
+              >
+                <span>Switch to Local AI (Ollama)</span>
+                <span aria-hidden="true">&rarr;</span>
+              </button>
+            </p>
+          )}
         </div>
       </form>
     </div>

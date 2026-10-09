@@ -9,6 +9,11 @@ export interface ProviderAvailability {
   endpoint?: string;
   cloudService?: 'gemini' | 'groq';
   message: string;
+  suggestion?: string;
+  rateLimit?: {
+    missionsPerMinute: number;
+    windowMs: number;
+  };
   error?: string;
   installedModels?: string[];
 }

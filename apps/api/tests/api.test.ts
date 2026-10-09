@@ -12,11 +12,14 @@ describe('FieldQuest API Endpoints', () => {
     expect(res.body.service).toContain('FieldQuest');
   });
 
-  it('GET /api/v1/ai/status?mode=demo returns demo status', async () => {
+  it('GET /api/v1/ai/status?mode=demo returns demo status with suggestion and rateLimit', async () => {
     const res = await request(app).get('/api/v1/ai/status?mode=demo');
     expect(res.status).toBe(200);
     expect(res.body.provider).toBe('demo');
     expect(res.body.available).toBe(true);
+    expect(res.body.suggestion).toBeDefined();
+    expect(res.body.rateLimit).toBeDefined();
+    expect(res.body.rateLimit.missionsPerMinute).toBeGreaterThan(0);
   });
 
   it('POST /api/v1/missions/generate with valid body creates missions', async () => {
@@ -59,4 +62,24 @@ describe('FieldQuest API Endpoints', () => {
     expect(res.body.error).toBeDefined();
     expect(res.body.error.code).toBe('INVALID_PREFERENCES');
   });
+
+  it('POST /api/v1/missions/generate returns rate-limit headers', async () => {
+    const payload = {
+      durationMinutes: 15,
+      environment: 'garden',
+      interests: ['plants'],
+      difficulty: 'easy',
+      language: 'en',
+      accessibleMobility: false,
+      forcedMode: 'demo',
+    };
+
+    const res = await request(app)
+      .post('/api/v1/missions/generate')
+      .send(payload);
+
+    expect(res.status).toBe(200);
+    expect(res.headers['ratelimit-limit']).toBeDefined();
+  });
 });
+

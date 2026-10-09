@@ -69,13 +69,31 @@ export class MissionGeneratorService {
     cloudOptions?: CloudProviderOptions
   ): Promise<ProviderAvailability> {
     const provider = this.getProvider(forcedMode);
+    let result: ProviderAvailability;
     if (provider.providerId === 'ollama') {
-      return await this.ollamaProvider.checkAvailability(model, endpoint);
+      result = await this.ollamaProvider.checkAvailability(model, endpoint);
+    } else if (provider.providerId === 'cloud') {
+      result = await this.cloudProvider.checkAvailability(cloudOptions);
+    } else {
+      result = await provider.checkAvailability();
     }
-    if (provider.providerId === 'cloud') {
-      return await this.cloudProvider.checkAvailability(cloudOptions);
+
+    // Attach production rate limit information
+    result.rateLimit = {
+      missionsPerMinute: config.rateLimitMissionMax,
+      windowMs: config.rateLimitMissionWindowMs,
+    };
+
+    // Attach contextual recommendation
+    if (result.provider === 'cloud') {
+      result.suggestion = 'Pro Tip: For lower latency, zero rate limits, and 100% private offline exploration, consider running Local AI (Ollama with qwen2.5:3b).';
+    } else if (result.provider === 'ollama') {
+      result.suggestion = '🌿 Running with Local Open-Weight AI: Zero rate limits, sovereign privacy, and offline freedom!';
+    } else {
+      result.suggestion = '⚡ Instant Curated Library active. For dynamic personalized AI, enable Cloud Engine or run Local AI.';
     }
-    return await provider.checkAvailability();
+
+    return result;
   }
 
   async generateAdventureMissions(

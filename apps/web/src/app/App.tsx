@@ -58,7 +58,10 @@ export const App: React.FC = () => {
                 />
               }
             />
-            <Route path="/setup" element={<AdventureSetupForm />} />
+            <Route
+              path="/setup"
+              element={<AdventureSetupForm onOpenSettings={() => setIsSettingsOpen(true)} />}
+            />
             <Route path="/adventure" element={<ActiveAdventureScreen />} />
             <Route path="/journal" element={<JournalView />} />
             <Route path="/studio" element={<FieldStudioView />} />

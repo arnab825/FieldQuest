@@ -93,7 +93,8 @@ export async function requestGenerateMissions(
     const err = new Error(
       errorJson?.error?.message || `Generation failed with status ${res.status}`
     );
-    (err as any).code = errorJson?.error?.code;
+    (err as any).code = errorJson?.error?.code || (res.status === 429 ? 'RATE_LIMIT_EXCEEDED' : undefined);
+    (err as any).suggestion = errorJson?.error?.suggestion;
     (err as any).details = errorJson?.error?.details;
     throw err;
   }

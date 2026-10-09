@@ -20,6 +20,8 @@ export interface AppConfig {
   groqModel: string;
   rateLimitWindowMs: number;
   rateLimitMax: number;
+  rateLimitMissionWindowMs: number;
+  rateLimitMissionMax: number;
 }
 
 export const config: AppConfig = {
@@ -36,5 +38,7 @@ export const config: AppConfig = {
   groqApiKey: process.env.GROQ_API_KEY,
   groqModel: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
   rateLimitWindowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '60000', 10),
-  rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '60', 10),
+  rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+  rateLimitMissionWindowMs: parseInt(process.env.RATE_LIMIT_MISSION_WINDOW_MS || '60000', 10),
+  rateLimitMissionMax: parseInt(process.env.RATE_LIMIT_MISSION_MAX || '15', 10),
 };
