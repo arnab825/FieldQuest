@@ -67,7 +67,7 @@ export const AdventureSessionRecordSchema = z.object({
   missions: z.array(NatureMissionSchema),
   status: z.enum(['in_progress', 'completed', 'abandoned']),
   totalMinutesSpent: z.number(),
-  providerUsed: z.enum(['ollama', 'demo']),
+  providerUsed: z.enum(['ollama', 'demo', 'cloud']),
   modelUsed: z.string().optional(),
   overallReflection: z.string().optional(),
 });
@@ -84,9 +84,10 @@ export type AdventureSessionRecord = z.infer<typeof AdventureSessionRecordSchema
 export interface AIProviderStatus {
   available: boolean;
   status: 'available' | 'unavailable';
-  provider: 'ollama' | 'demo';
+  provider: 'ollama' | 'demo' | 'cloud';
   model: string;
   endpoint?: string;
+  cloudService?: 'gemini' | 'groq';
   message: string;
   error?: string;
   installedModels?: string[];

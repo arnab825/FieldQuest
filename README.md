@@ -21,15 +21,17 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 ## Key Features
 
 - 🍃 **Context-Aware Nature Missions:** Generates tailored 15, 30, or 60-minute observational quests based on your environment, interests, difficulty, and time.
-- 🎨 **Creative Field Studio (`/studio`):** An interactive botanical illustration workshop to sketch wild specimens, experiment with 4 historical scientific art styles (*Vintage Naturalist Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*), randomize seeds, and download high-resolution diagnostic plates.
+- ☁️ **Cloud Naturalist Engine (Production AI):** Powered by free-tier production cloud models (Google Gemini 1.5 Flash & Groq Cloud Llama 3.3). Zero GPU or local installation required, zero client credentials needed.
+- 🔄 **Automatic 3-Tier Failover Pipeline:** If cloud quotas are exhausted or offline, requests seamlessly fail over to **Local AI (Ollama)** if running, and gracefully to our **Curated Field Log Engine**, guaranteeing zero downtime.
+- 🎨 **Creative Field Studio (`/studio`):** An interactive botanical illustration workshop to sketch wild specimens, experiment with historical scientific art styles (*Vintage Naturalist Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*), randomize seeds, and download high-resolution diagnostic plates.
 - 🌿 **Classical Herbarium Folios & Inline Reference Drawer:** 7 curated anatomical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with morphological diagnostic keys, expandable directly inline within each journal observation card without disruptive modals or redirects.
 - 📖 **Focused Local Nature Journal (`/journal`):** A distraction-free explorer's log with dedicated **Adventures** history and **Field Notes & Observations** logs. Includes full JSON export and restore backup functionality.
-- 🧠 **Open-Weight AI Integration:** Powered by local open-weight models via **Ollama** (defaulting to `qwen2.5:3b` or Gemma), keeping prompts and insights private and sovereign.
-- ⚡ **Zero-Config Demo Mode:** High-fidelity deterministic mission generator for immediate exploration without needing a local AI GPU or daemon.
+- 🧠 **Local Open-Weight AI (Ollama / Podman):** Optional self-hosted inference via local Ollama instances running open-weight models (`qwen2.5:3b` / Gemma), keeping prompts and insights private and sovereign.
+- ⚡ **Curated Offline Engine:** High-fidelity deterministic mission generator for immediate exploration without needing any AI server or connectivity.
 - 📴 **True Offline-First Architecture:** Uses IndexedDB (Dexie) for durable local storage of all adventures, field notes, and reflections. The PWA shell caches assets for seamless offline operation.
 - 📵 **Screen-Down Mode:** Put your phone in your pocket and explore with your senses; screen dims to save battery and reduce distraction.
 - 🏛️ **Our Philosophy & Science Modal:** Comprehensive interactive educational chapters explaining the cognitive science, morphology, acoustic ecology, and privacy design behind FieldQuest.
-- 🔒 **Absolute Privacy:** No mandatory accounts, no cloud sync, no tracking, and no invasive background GPS logging.
+- 🔒 **Absolute Privacy:** No mandatory accounts, no cloud sync of personal field journals, no tracking, and no invasive background GPS logging.
 
 ---
 
@@ -41,10 +43,10 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 +---------------------------------------------------------------------------------+
 |                                                                                 |
 |  [EXPLORE / SETUP]        [FIELD JOURNAL]                 [FIELD STUDIO]        |
-|  - 15/30/60m durations    - Adventures History            - 4 Art Style Presets |
+|  - 15/30/60m durations    - Adventures History            - Art Style Presets   |
 |  - Habitat selection      - Field Notes & Observations    - Subject Generators  |
-|  - Mobility accessible    - Reference Inspection Modal    - Live Studio Canvas  |
-|  - Sensor-driven quests   - JSON Backup & Restore         - Download High-Res   |
+|  - Mobility accessible    - Inline Reference Drawer       - Live Studio Canvas  |
+|  - Multi-tier AI Engine   - JSON Backup & Restore         - Download High-Res   |
 |                                                                                 |
 +---------------------------------------------------------------------------------+
 ```
@@ -62,8 +64,13 @@ Browser PWA (React 19 + Tailwind v4 + Dexie IndexedDB + Web Worker)
    ▼ (REST API: /api/v1/*)
 Express 5 API Service (Node.js LTS)
    │
-   ├─► DemoMissionProvider (Deterministic curated engine)
-   └─► OllamaMissionProvider ──► Ollama (:11434) ──► qwen2.5:3b / qwen3:4b
+   ├─► [Tier 1] CloudMissionProvider (Google Gemini 1.5 Flash / Groq Cloud Free Tier)
+   │        │
+   │        ▼ (Auto-failover on quota exhaustion or network timeout)
+   ├─► [Tier 2] OllamaMissionProvider ──► Local Ollama (:11434) ──► qwen2.5:3b / Gemma
+   │        │
+   │        ▼ (Auto-failover if local daemon is inactive)
+   └─► [Tier 3] DemoMissionProvider (Deterministic curated naturalist library, 100% offline)
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system diagrams and data flow specifications.
@@ -74,7 +81,10 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system diagrams and da
 
 - **Frontend:** React 19, TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query, Zustand, Dexie.js (IndexedDB), `vite-plugin-pwa`, Framer Motion, Lucide React, Zod.
 - **Backend:** Node.js (LTS), Express 5, TypeScript, Zod, CORS, Express Rate Limit.
-- **AI Inference:** Ollama REST API running open-weight `qwen3:4b` (compatible with Google Gemma 2 / 3 and other open models).
+- **AI Inference:** Multi-tier inference engine:
+  1. **Production Cloud AI:** Google Gemini (1.5 Flash / 2.0 Flash) & Groq Cloud (Llama 3.3 70B / Qwen 2.5) free tier.
+  2. **Local AI:** Ollama running open-weight `qwen2.5:3b`, `qwen3:4b`, or Google Gemma 2.
+  3. **Curated Offline Engine:** 100% deterministic, naturalist-verified offline catalog.
 - **Testing:** Vitest, Supertest, React Testing Library.
 
 ---
@@ -83,7 +93,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system diagrams and da
 
 - **Node.js:** Current LTS (>= 20.x, tested with Node 24.x)
 - **npm:** >= 10.x
-- *(Optional for real local AI)* **Ollama:** [ollama.com](https://ollama.com)
+- *(Optional for cloud AI)* **Google AI Studio or Groq API Key:** Free tier keys configured in `.env`.
+- *(Optional for local AI)* **Ollama / Podman:** [ollama.com](https://ollama.com) or [podman.io](https://podman.io)
 
 ---
 
@@ -97,16 +108,35 @@ cd fieldquest
 # 2. Install workspace dependencies
 npm install
 
-# 3. Create environment file from template
+# 3. Configure environment file
 cp .env.example .env
+```
+
+### Environment Variables (`.env`)
+
+```env
+PORT=4000
+NODE_ENV=development
+CLIENT_ORIGIN=http://localhost:5173
+
+# AI Inference Engine Configuration
+AI_PROVIDER=cloud
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b
+
+# Production Cloud AI Keys (Optional Free Tier: Google Gemini / Groq)
+# When provided, Cloud Naturalist Engine runs via real-time cloud models.
+# If cloud capacity is exhausted or offline, it automatically fails over to local Ollama!
+GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
 ```
 
 ---
 
 ## Running the Application
 
-### Option A: Standard Mode (Frontend + API in Demo Mode)
-FieldQuest defaults to Demo Mode, which works instantly without needing Ollama:
+### Option A: Standard Mode (Cloud Naturalist Engine + Auto-Failover)
+FieldQuest runs out of the box with zero setup. If cloud keys are provided in `.env`, it runs via production cloud models. If keys are missing or exhausted, it automatically fails over to local Ollama or the curated naturalist library:
 
 ```bash
 # Starts both frontend (port 5173) and API (port 4000)
@@ -190,16 +220,16 @@ To use live open-weight model generation:
    ollama server
    ```
 
-2. **Pull the default model (`qwen3:4b`):**
+2. **Pull the default model (`qwen2.5:3b`):**
    ```bash
-   ollama pull qwen3:4b
+   ollama pull qwen2.5:3b
    ```
 
 3. **Configure your `.env`:**
    ```env
    AI_PROVIDER=ollama
    OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=qwen3:4b
+   OLLAMA_MODEL=qwen2.5:3b
    ```
 
 4. **Restart the API:**

@@ -26,7 +26,7 @@ export const NatureMissionSchema = z.object({
 
 export const GenerateMissionsResponseSchema = z.object({
   sessionId: z.string(),
-  provider: z.enum(['ollama', 'demo']),
+  provider: z.enum(['ollama', 'demo', 'cloud']),
   model: z.string(),
   generatedAt: z.string(),
   preferences: AdventurePreferencesSchema,

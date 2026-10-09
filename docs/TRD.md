@@ -24,7 +24,9 @@ FieldQuest is architected as a modular monorepo consisting of:
 | Backend Runtime | Node.js | LTS (>= 20.x) | Server execution environment |
 | Web Framework | Express | 5.x | HTTP REST API endpoints |
 | Validation | Zod | 3.x | End-to-end runtime contract validation |
-| AI Inference | Ollama REST API | >= 0.3.x | Local open-weight LLM execution (`qwen3:4b`) |
+| Production Cloud AI | Google Gemini / Groq Cloud | Free Tier | Real-time cloud naturalist missions via server API keys |
+| Local AI Inference | Ollama REST API | >= 0.3.x | Sovereign open-weight LLM execution (`qwen2.5:3b`, `qwen3:4b`, Gemma) |
+| Curated Fallback | In-Memory Catalog | Native TS | Deterministic zero-dependency offline mission catalog |
 | Testing | Vitest + RTL | Latest | Unit, integration, and component tests |
 
 ---
@@ -43,9 +45,12 @@ FieldQuest is architected as a modular monorepo consisting of:
 [ Express 5 API ]
   ├── Middleware         --> CORS, Rate Limiting, Request Logger, Error Handler
   ├── Services           --> MissionGeneratorService, SafetyValidator
-  └── Provider Abstraction
-        ├── OllamaMissionProvider  --> Communicates with Ollama (qwen3:4b) via HTTP
-        └── DemoMissionProvider    --> Deterministic offline fallback engine
+  └── 3-Tier Provider Abstraction
+        ├── [Tier 1] CloudMissionProvider  --> Google Gemini (1.5 Flash) / Groq Cloud (Llama 3.3)
+        │        └── (Auto-failover on quota limit / 429)
+        ├── [Tier 2] OllamaMissionProvider --> Local Ollama (qwen2.5:3b) on port 11434
+        │        └── (Auto-failover if Ollama is unreachable)
+        └── [Tier 3] DemoMissionProvider   --> Deterministic curated naturalist library (100% offline)
 ```
 
 ---
@@ -117,7 +122,7 @@ export const AdventureSessionSchema = z.object({
   missions: z.array(NatureMissionSchema).min(1).max(6),
   status: z.enum(['in_progress', 'completed', 'abandoned']),
   totalMinutesSpent: z.number().nonnegative().default(0),
-  providerUsed: z.enum(['ollama', 'demo']),
+  providerUsed: z.enum(['cloud', 'ollama', 'demo']),
   modelUsed: z.string().optional(),
 });
 
@@ -141,24 +146,30 @@ export type AdventureSession = z.infer<typeof AdventureSessionSchema>;
 
 ### 4.2 AI Status Check
 - **Endpoint:** `GET /api/v1/ai/status`
-- **Response (200 OK - Ollama online):**
+- **Response (200 OK - Cloud Engine Active with Failover Pipeline):**
+```json
+{
+  "provider": "cloud",
+  "status": "available",
+  "model": "gemini-1.5-flash",
+  "endpoint": "https://generativelanguage.googleapis.com",
+  "message": "Production Cloud AI (Google Gemini 1.5 Flash) is ready with automatic Ollama/Curated failover.",
+  "cloudAvailable": true,
+  "ollamaAvailable": false,
+  "failoverChain": ["cloud", "ollama", "demo"]
+}
+```
+- **Response (200 OK - Local Ollama Dedicated Mode):**
 ```json
 {
   "provider": "ollama",
   "status": "available",
-  "model": "qwen3:4b",
+  "model": "qwen2.5:3b",
   "endpoint": "http://localhost:11434",
-  "message": "Local AI is ready for nature mission generation."
-}
-```
-- **Response (200 OK - Ollama offline or Demo configured):**
-```json
-{
-  "provider": "ollama",
-  "status": "unavailable",
-  "model": "qwen3:4b",
-  "endpoint": "http://localhost:11434",
-  "message": "Local Ollama server is unreachable. Demo mode is available."
+  "message": "Local open-weight AI (Ollama) is ready for nature mission generation.",
+  "cloudAvailable": false,
+  "ollamaAvailable": true,
+  "failoverChain": ["ollama", "demo"]
 }
 ```
 
@@ -170,8 +181,8 @@ export type AdventureSession = z.infer<typeof AdventureSessionSchema>;
 ```json
 {
   "sessionId": "a5d09b67-62a2-4a0b-93bf-4d515a6bfaef",
-  "provider": "ollama",
-  "model": "qwen3:4b",
+  "provider": "cloud",
+  "model": "gemini-1.5-flash",
   "generatedAt": "2026-10-09T12:01:00.000Z",
   "missions": [
     {
@@ -192,16 +203,7 @@ export type AdventureSession = z.infer<typeof AdventureSessionSchema>;
   ]
 }
 ```
-- **Error Response (503 Service Unavailable):**
-```json
-{
-  "error": {
-    "code": "AI_PROVIDER_UNAVAILABLE",
-    "message": "Local AI is unavailable. You can use a saved adventure or enter demo mode.",
-    "details": "Connection refused at http://localhost:11434"
-  }
-}
-```
+- **Automatic Failover Behavior:** If cloud API quotas are exhausted (HTTP 429) or remote network requests fail, the API automatically executes through Tier 2 (Ollama) or Tier 3 (Curated Field Library). A 200 OK is returned with `provider: "demo"` or `provider: "ollama"`, ensuring end users never experience a blocked mission.
 
 ---
 
@@ -216,18 +218,26 @@ export interface AIMissionProvider {
 }
 ```
 
-### 5.1 Ollama Provider (`OllamaMissionProvider`)
-- Connects to `OLLAMA_BASE_URL/api/generate` or `/api/chat`.
+### 5.1 Cloud Provider (`CloudMissionProvider`)
+- High-efficiency production provider connecting to:
+  - **Google Gemini API:** `gemini-1.5-flash` or `gemini-2.0-flash` free tier via `GEMINI_API_KEY`.
+  - **Groq Cloud API:** OpenAI-compatible `/chat/completions` endpoint for `llama-3.3-70b-versatile` or `qwen-2.5-32b` free tier via `GROQ_API_KEY`.
+- Zero client key entry required: keys remain secured on the backend in `.env`.
+- System prompts enforce strict JSON formatting and rigorous ecological safety guardrails.
+- Quota exhaustion (HTTP 429 / quota limit) and network errors trigger immediate fallback to Tier 2 (Ollama) and Tier 3 (Demo).
+
+### 5.2 Ollama Provider (`OllamaMissionProvider`)
+- Connects to local `OLLAMA_BASE_URL/api/generate` or `/api/chat`.
 - System prompt instructs model to act as a nature naturalist with strict adherence to safety rules and structured JSON output.
 - Temperature: `0.5` for balanced ecological creativity and strict schema adherence.
 - Response is sanitized and parsed with `z.array(NatureMissionSchema)`.
 
-### 5.2 Demo Provider (`DemoMissionProvider`)
+### 5.3 Demo Provider (`DemoMissionProvider`)
 - Deterministic, zero-dependency provider.
-- Filters curated mission templates by requested environment, interests, and duration (English).
-- Guaranteed sub-5ms response time with 100% schema validity.
+- Filters curated mission templates by requested environment, interests, and duration.
+- Guaranteed sub-5ms response time with 100% schema validity. Serves as the ultimate offline and failover safety net.
 
-### 5.3 Procedural Botanical Sketch & Specimen Engine (`sketch-generator.ts`)
+### 5.4 Procedural Botanical Sketch & Specimen Engine (`sketch-generator.ts`)
 - Client-side procedural illustration pipeline that synthesizes morphological specimen plates based on field notes and biological taxonomic rules.
 - **Historical Style Presets:**
   - `vintage_plate`: 18th-century antique copperplate lithograph with sepia ink hatching and Linnaean taxonomic labels.
@@ -268,3 +278,4 @@ Stores:
 3. **Timeouts:** Model requests enforce a configurable 45-second timeout to avoid hung processes.
 4. **Input Sanitization:** User strings are bounded and escaped. No `dangerouslySetInnerHTML` is used in React.
 5. **Zero Cloud Leaks:** Images captured locally remain inside IndexedDB as Data URLs or Blobs; they are never uploaded to any remote server.
+6. **Server-Side API Key Isolation:** Cloud API keys (`GEMINI_API_KEY`, `GROQ_API_KEY`) are read strictly from backend `.env` configuration and are never exposed or transmitted to the client browser. Client requests invoke server endpoints without needing personal credentials.

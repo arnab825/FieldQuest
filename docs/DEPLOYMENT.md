@@ -32,15 +32,21 @@ FieldQuest's architecture intentionally decouples the client PWA from the backen
 
 ## 2. Deployment Scenarios
 
-### Scenario A: Public Frontend with Demo Mode or Remote Dedicated Backend
-- **Frontend:** Hosted on Vercel or Cloudflare Pages.
-- **Backend:** Hosted on a Node.js persistent host (or configured in `AI_PROVIDER=demo` mode for zero GPU cost demonstration).
-- **Advantage:** Instant global availability, 100% free tier compatible, completely functional offline after initial load.
+### Scenario A: Production Cloud AI (Zero GPU Setup, Free Tier)
+- **Frontend:** Hosted on Vercel, Cloudflare Pages, or Netlify.
+- **Backend:** Hosted on Render, Railway, Fly.io, or VPS.
+- **AI Engine:** Google Gemini (1.5 Flash / 2.0 Flash) or Groq Cloud (Llama 3.3 / Qwen 2.5) free-tier API keys stored safely in backend environment variables (`GEMINI_API_KEY` / `GROQ_API_KEY`).
+- **Failover:** Automatic fallback to local Ollama (if active) and Curated Field Library if quotas are hit.
+- **Advantage:** Production-ready real AI for all website visitors with zero GPU costs, zero local model downloads, and zero client setup.
 
-### Scenario B: Full Production with Self-Hosted Local AI
+### Scenario B: Full Sovereign Self-Hosted Stack with Local AI
 - **Frontend & Backend:** Deployed on a single machine or VPS (e.g. Ubuntu with 8GB RAM + NVIDIA GPU or modern multi-core CPU).
 - **Ollama:** Installed via `curl -fsSL https://ollama.com/install.sh | sh` and running as a systemd service.
 - **Reverse Proxy:** Nginx or Caddy terminating SSL (Let's Encrypt) and proxying `/api` to port 4000 and `/` to Vite static build.
+
+### Scenario C: Static / Offline Demonstration Mode
+- **Configuration:** Set `AI_PROVIDER=demo` in `.env`.
+- **Advantage:** 100% offline, zero network or LLM dependencies, guaranteed instant responses.
 
 ---
 
@@ -50,11 +56,16 @@ FieldQuest's architecture intentionally decouples the client PWA from the backen
 | Variable | Default | Purpose |
 |---|---|---|
 | `PORT` | `4000` | HTTP port for Express server |
-| `NODE_ENV` | `production` | Node environment |
+| `NODE_ENV` | `production` | Node environment (`development` / `production`) |
 | `CLIENT_ORIGIN` | `https://your-domain.com` | Allowed CORS origin (comma-separated or single) |
-| `AI_PROVIDER` | `demo` or `ollama` | Active mission generator provider |
+| `AI_PROVIDER` | `cloud` | Active mission generator provider (`cloud`, `ollama`, `demo`) |
+| `GEMINI_API_KEY` | *(optional)* | Google Gemini API key for free-tier cloud generation |
+| `GEMINI_MODEL` | `gemini-1.5-flash` | Gemini model ID (`gemini-1.5-flash`, `gemini-2.0-flash`) |
+| `GROQ_API_KEY` | *(optional)* | Groq Cloud API key for ultra-fast Llama 3.3 generation |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model ID |
+| `CLOUD_PROVIDER` | `gemini` | Primary cloud provider (`gemini` or `groq`) |
 | `OLLAMA_BASE_URL`| `http://localhost:11434`| Address of Ollama daemon |
-| `OLLAMA_MODEL` | `qwen3:4b` | Open-weight model tag |
+| `OLLAMA_MODEL` | `qwen2.5:3b` | Open-weight model tag |
 | `OLLAMA_TIMEOUT_MS`| `45000` | Request timeout in milliseconds |
 | `RATE_LIMIT_MAX` | `30` | Max requests per minute per IP |
 

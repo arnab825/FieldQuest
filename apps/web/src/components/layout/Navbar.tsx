@@ -115,11 +115,19 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
             <span className="text-forest-deep font-semibold hidden xs:inline text-[11px] sm:text-xs">
               {aiStatus?.provider === 'ollama' && aiStatus.available
-                ? 'Local AI (Qwen)'
-                : 'Demo Mode'}
+                ? `Local AI (${aiStatus.model.split(':')[0]})`
+                : aiStatus?.provider === 'cloud' && aiStatus.available
+                ? `Cloud AI (${aiStatus.cloudService === 'groq' ? 'Groq' : 'Gemini'})`
+                : aiStatus?.provider === 'cloud'
+                ? 'Cloud AI (Ready)'
+                : 'Demo Engine'}
             </span>
             <span className="text-forest-deep font-semibold xs:hidden text-[11px]">
-              {aiStatus?.provider === 'ollama' && aiStatus.available ? 'Local AI' : 'Demo'}
+              {aiStatus?.provider === 'ollama' && aiStatus.available
+                ? 'Local AI'
+                : aiStatus?.provider === 'cloud'
+                ? 'Cloud AI'
+                : 'Demo'}
             </span>
           </button>
 

@@ -16,15 +16,21 @@ graph TD
     
     subgraph Server["FieldQuest API (Express 5)"]
         API["REST Endpoints (/api/v1)"]
-        Service["MissionGeneratorService"]
+        Service["MissionGeneratorService (3-Tier Failover Engine)"]
         Safety["Safety Validator"]
-        OllamaP["OllamaMissionProvider"]
-        DemoP["DemoMissionProvider"]
+        CloudP["[Tier 1] CloudMissionProvider"]
+        OllamaP["[Tier 2] OllamaMissionProvider"]
+        DemoP["[Tier 3] DemoMissionProvider"]
     end
     
-    subgraph AI["Local AI Engine"]
+    subgraph CloudAI["Production Cloud AI (Free Tier)"]
+        Gemini["Google Gemini API (1.5 Flash / 2.0 Flash)"]
+        Groq["Groq Cloud API (Llama 3.3 / Qwen 2.5)"]
+    end
+
+    subgraph LocalAI["Local AI Engine (Optional / Self-Hosted)"]
         OllamaServer["Ollama Daemon (:11434)"]
-        Model["qwen3:4b (Open-Weight LLM)"]
+        Model["qwen2.5:3b / Gemma (Open-Weight LLM)"]
     end
     
     User <-->|Touch / Screen-down mode| UI
@@ -36,8 +42,11 @@ graph TD
     
     API --> Service
     Service --> Safety
-    Service -->|AI_PROVIDER=ollama| OllamaP
-    Service -->|AI_PROVIDER=demo| DemoP
+    Service -->|Tier 1: Server .env keys| CloudP
+    Service -.->|Tier 2: Failover if cloud exhausted| OllamaP
+    Service -.->|Tier 3: 100% Offline fallback| DemoP
+    CloudP <-->|HTTPS REST| Gemini
+    CloudP <-->|HTTPS REST| Groq
     OllamaP <-->|HTTP POST /api/generate| OllamaServer
     OllamaServer --> Model
 ```
@@ -57,7 +66,7 @@ graph LR
         Studio["FieldStudioView (Specimen Art & Folios)"]
         PlateDrawer["InlineReferenceDrawer (Card Accordion)"]
         Philosophy["ObjectiveBasisModal (Philosophy & Science)"]
-        Settings["AISettingsModal"]
+        Settings["AISettingsModal (Zero-Key Cloud & Local Status)"]
     end
     
     subgraph State_Management["State & Data Layers"]
@@ -83,7 +92,7 @@ graph LR
 
 ---
 
-## 3. Mission Generation Sequence Diagram
+## 3. Mission Generation & Failover Sequence Diagram
 
 ```mermaid
 sequenceDiagram
@@ -92,34 +101,37 @@ sequenceDiagram
     participant UI as Web PWA (React)
     participant API as Express API
     participant Gen as MissionGeneratorService
-    participant Provider as OllamaMissionProvider
-    participant Ollama as Ollama (:11434)
+    participant Cloud as CloudMissionProvider
+    participant Ollama as OllamaMissionProvider
+    participant Demo as DemoMissionProvider
     participant IDB as IndexedDB (Dexie)
 
-    User->>UI: Selects 30 mins, Park, Plants & Birds, English
+    User->>UI: Selects 30 mins, Park, Plants & Birds
     UI->>API: POST /api/v1/missions/generate {durationMinutes: 30, ...}
-    
-    alt Provider is Ollama & Healthy
-        API->>Gen: generate(preferences)
-        Gen->>Provider: generateMissions(preferences)
-        Provider->>Ollama: POST /api/generate (System prompt + Strict JSON schema)
-        Ollama-->>Provider: Raw LLM JSON response
-        Provider->>Gen: Zod validate & normalize
-        Gen-->>API: Validated NatureMission[]
+    API->>Gen: generate(preferences)
+
+    alt Tier 1: Cloud AI Available & Has Quota
+        Gen->>Cloud: generateMissions(preferences)
+        Cloud-->>Gen: Validated NatureMission[]
+        Gen-->>API: Missions (provider: 'cloud', model: 'gemini-1.5-flash')
+        API-->>UI: 200 OK { sessionId, missions, provider: 'cloud' }
+    else Tier 1 Exhausted (HTTP 429) & Local Ollama Online
+        Gen->>Cloud: generateMissions(preferences)
+        Cloud-->>Gen: Error 429 (Quota limit reached)
+        Note over Gen: Automatic failover to Tier 2
+        Gen->>Ollama: generateMissions(preferences)
+        Ollama-->>Gen: Validated NatureMission[]
+        Gen-->>API: Missions (provider: 'ollama', model: 'qwen2.5:3b')
         API-->>UI: 200 OK { sessionId, missions, provider: 'ollama' }
-    else Ollama Unreachable / Error
-        API->>Gen: Check provider health
-        Gen-->>API: Provider unreachable
-        API-->>UI: 503 AI_PROVIDER_UNAVAILABLE
-        UI->>User: Displays alert with "Switch to Demo Mode" option
-        User->>UI: Clicks "Continue in Demo Mode"
-        UI->>API: POST /api/v1/missions/generate (with fallback or mode=demo)
-        API->>Gen: DemoMissionProvider.generateMissions()
-        Gen-->>API: Instant Curated Missions
+    else Cloud & Ollama Offline / Unreachable
+        Note over Gen: Automatic failover to Tier 3
+        Gen->>Demo: generateMissions(preferences)
+        Demo-->>Gen: Curated Naturalist Missions
+        Gen-->>API: Missions (provider: 'demo')
         API-->>UI: 200 OK { sessionId, missions, provider: 'demo' }
     end
 
-    UI->>IDB: Save initial adventure session
+    UI->>IDB: Save adventure session locally
     UI->>User: Renders Mission 1 with Timer & Screen-Down toggle
 ```
 
@@ -131,8 +143,8 @@ sequenceDiagram
 graph TD
     subgraph Online_State["Online Mode"]
         NetReq["Fetch Model Status / Generate Missions"] --> ExpressAPI["Express API"]
-        ExpressAPI --> LLM["Ollama / Demo Engine"]
-        LLM --> ResponseData["Mission JSON"]
+        ExpressAPI --> Engine["3-Tier Engine (Cloud -> Ollama -> Demo)"]
+        Engine --> ResponseData["Mission JSON"]
         ResponseData --> SaveLocal[("Write to IndexedDB")]
     end
 
@@ -144,7 +156,7 @@ graph TD
         ViewSaved --> WriteJournal["Add Observations, Photos & Notes"]
         WriteJournal --> ReadIDB
         AttemptGen["User attempts new AI generation"] --> DetectOffline["Detect Network Disconnect"]
-        DetectOffline --> OfflineBanner["Display Offline Notice + Preloaded Offline Missions"]
+        DetectOffline --> OfflineBanner["Display Curated Field Library Missions"]
     end
 ```
 
@@ -154,7 +166,7 @@ graph TD
 
 ```mermaid
 graph TD
-    subgraph Client_Hosting["Option A: Static PWA Hosting (e.g. Vercel, Cloudflare Pages)"]
+    subgraph Client_Hosting["Client Hosting (Vercel / Cloudflare Pages / Static CDN)"]
         CDN["Global Edge CDN"]
         PWA_Assets["PWA Bundle (HTML, CSS, JS, Service Worker, Manifest)"]
         CDN --- PWA_Assets
@@ -166,19 +178,26 @@ graph TD
         Browser --- LocalIDB
     end
 
-    subgraph Backend_Host["Dedicated Node.js & Inference Host (e.g. VPS or Local Machine)"]
-        Proxy["Reverse Proxy (Nginx / Caddy with HTTPS)"]
+    subgraph Backend_Hosting["Production Backend (Render / Railway / Fly.io / VPS / Podman)"]
         NodeAPI["Node.js Express 5 API"]
-        OllamaDaemon["Ollama Daemon"]
-        GPU["GPU / CPU Inference (qwen3:4b)"]
-        
-        Proxy --> NodeAPI
-        NodeAPI --> OllamaDaemon
-        OllamaDaemon --> GPU
+        EnvConfig["Server .env Secrets (GEMINI_API_KEY, GROQ_API_KEY)"]
+        NodeAPI --- EnvConfig
+    end
+
+    subgraph Cloud_Providers["External AI Free Tier"]
+        GeminiAPI["Google Gemini 1.5/2.0 Flash"]
+        GroqAPI["Groq Cloud Llama 3.3"]
+    end
+
+    subgraph Optional_Self_Host["Optional Self-Hosted Host"]
+        LocalOllama["Ollama Daemon (:11434)"]
     end
 
     Browser <-->|HTTPS (Get Assets)| CDN
-    Browser <-->|HTTPS REST (API Calls)| Proxy
+    Browser <-->|HTTPS REST (Zero Client Keys)| NodeAPI
+    NodeAPI <-->|HTTPS API Calls| GeminiAPI
+    NodeAPI <-->|HTTPS API Calls| GroqAPI
+    NodeAPI -.->|Optional Local Host| LocalOllama
 ```
 
 ---
@@ -187,8 +206,9 @@ graph TD
 
 | Decision | Rationale | Trade-Off Considered |
 |---|---|---|
-| **Dexie / IndexedDB over PostgreSQL / SQLite** | Absolute zero friction, zero signups, true local-first privacy, zero server maintenance costs for personal data. | Data is device-bound unless user explicitly exports JSON. |
-| **Monorepo (apps/web + apps/api)** | Single cohesive repository for shared schemas, synchronized types, and single command startup. | Requires workspace tooling configuration. |
-| **Ollama with `qwen3:4b` default** | High reasoning capability for botanical/ecological tasks with low VRAM footprint (~3GB) suitable for local workstations. | Users without Ollama need a graceful fallback, provided by `DemoMissionProvider`. |
-| **Zustand for Session, TanStack Query for Network** | Prevents state duplication. TanStack Query manages query caching, loading, errors; Zustand manages transient UI active timer & screen-down toggle. | Requires clear boundaries so components don't misplace state. |
+| **Zero-Client-Key Cloud Architecture** | Keys (`GEMINI_API_KEY`, `GROQ_API_KEY`) stay strictly on the server in `.env`. Regular explorers get instant production AI with zero signup friction. | Host maintains server `.env` keys. |
+| **Automatic 3-Tier Failover Pipeline** | Cloud (Tier 1) -> Ollama (Tier 2) -> Curated Library (Tier 3) guarantees missions never fail even when free-tier quotas expire. | Generation may fall back to curated templates without error popups. |
+| **Dexie / IndexedDB over Remote DB** | Absolute zero friction, zero signups, true local-first privacy, zero server maintenance costs for personal field notes. | Data is device-bound unless user explicitly exports JSON backup. |
+| **Monorepo (apps/web + apps/api)** | Single cohesive repository for shared schemas, synchronized types, and single command startup. | Requires npm workspace configuration. |
+| **Ollama Open-Weight Sovereignty** | Local open-weight models (`qwen2.5:3b`, Gemma) preserve full user privacy for developers and offline self-hosters. | Requires running local Ollama daemon or container. |
 | **Tailwind CSS v4 with Forest Atelier tokens** | Extremely high aesthetic quality with CSS variables, high rendering performance, zero external CSS runtime overhead. | Custom configuration required for Fraunces and DM Sans typography. |

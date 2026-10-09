@@ -3,17 +3,17 @@ import {
   X,
   Cpu,
   ShieldCheck,
-  HardDrive,
   Download,
   Trash2,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   RefreshCw,
   Copy,
   Check,
   Server,
   Upload,
+  Cloud,
+  Layers,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIProviderStatus } from '../../types/index.js';
@@ -33,16 +33,18 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  // Mode selection state (persisted in localStorage)
-  const [selectedMode, setSelectedMode] = useState<'demo' | 'ollama'>(() => {
-    return (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'demo';
+  // Mode selection state: 'cloud' (Production Cloud with Local Failover) vs 'ollama' (Local Open-Weight AI)
+  const [selectedMode, setSelectedMode] = useState<'cloud' | 'ollama'>(() => {
+    const saved = localStorage.getItem('fieldquest_ai_mode');
+    return saved === 'ollama' ? 'ollama' : 'cloud';
   });
 
+  // Ollama configuration (for developers / local runners)
   const [endpoint, setEndpoint] = useState<string>(() => {
     return localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
   });
 
-  const [model, setModel] = useState<string>(() => {
+  const [ollamaModel, setOllamaModel] = useState<string>(() => {
     return localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
   });
 
@@ -60,7 +62,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     );
   };
 
-  const isCurrentModelInstalled = installedList.length === 0 || isModelInstalled(model);
+  const isCurrentModelInstalled = installedList.length === 0 || isModelInstalled(ollamaModel);
 
   if (!isOpen) return null;
 
@@ -68,12 +70,11 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await fetchAIStatus(selectedMode, model, endpoint);
+      const res = await fetchAIStatus(selectedMode, ollamaModel, endpoint);
       setTestResult(res);
 
-      // Automatically sync input field to matched or auto-synced model from container!
-      if (res.available && res.model && res.model !== 'unknown') {
-        setModel(res.model);
+      if (selectedMode === 'ollama' && res.available && res.model && res.model !== 'unknown') {
+        setOllamaModel(res.model);
         localStorage.setItem('fieldquest_ollama_model', res.model);
       }
     } catch {
@@ -81,7 +82,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         available: false,
         status: 'unavailable',
         provider: selectedMode,
-        model: model,
+        model: selectedMode === 'cloud' ? 'cloud-production' : ollamaModel,
         message: 'Could not connect to the backend service to verify AI engine.',
       });
     } finally {
@@ -92,12 +93,12 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   const handleSaveSettings = async () => {
     localStorage.setItem('fieldquest_ai_mode', selectedMode);
     localStorage.setItem('fieldquest_ollama_endpoint', endpoint);
-    localStorage.setItem('fieldquest_ollama_model', model);
+    localStorage.setItem('fieldquest_ollama_model', ollamaModel);
 
     try {
       await saveAIConfig({
         mode: selectedMode,
-        model: model,
+        model: ollamaModel,
         endpoint: endpoint,
       });
     } catch (err) {
@@ -154,7 +155,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     }
   };
 
-  const popularModels = [
+  const popularOllamaModels = [
     { id: 'qwen2.5:3b', name: 'Qwen 2.5 (3B)', note: 'Recommended: Balanced & Ecological' },
     { id: 'gemma2:2b', name: 'Gemma 2 (2B)', note: 'Google DeepMind: Ultra Fast' },
     { id: 'llama3.2:3b', name: 'Llama 3.2 (3B)', note: 'Meta: Concise & Sharp' },
@@ -162,7 +163,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto scrollbar-none">
         {/* Close Button */}
         <button
@@ -182,7 +183,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
             </div>
             {aiStatus && (
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle">
-                Active: {aiStatus.provider} ({aiStatus.model})
+                Active: {aiStatus.provider === 'cloud' ? 'Cloud Naturalist' : aiStatus.provider} ({aiStatus.model})
               </span>
             )}
           </div>
@@ -190,51 +191,56 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
             AI Engine & Settings
           </h2>
           <p className="text-xs text-text-muted mt-0.5">
-            Choose your AI inference provider, manage local models, or run offline.
+            Choose your AI inference provider or manage local containerized models.
           </p>
         </div>
 
         <div className="space-y-6 text-xs sm:text-sm">
-          {/* 1. AI Provider Selection Cards */}
+          {/* 1. Dual AI Engine Selection Cards */}
           <div className="space-y-3">
             <label className="text-xs font-bold uppercase tracking-wider text-forest-deep block">
               1. Select Active AI Engine
             </label>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Option A: Demo Naturalist Engine */}
+              {/* Option A: Cloud Naturalist Engine */}
               <div
-                onClick={() => setSelectedMode('demo')}
+                onClick={() => setSelectedMode('cloud')}
                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative ${
-                  selectedMode === 'demo'
+                  selectedMode === 'cloud'
                     ? 'border-forest-deep bg-parchment-warm/70 shadow-xs'
                     : 'border-border-subtle bg-paper-white hover:border-moss-green/40'
                 }`}
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-editorial font-bold text-forest-deep text-sm flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-leaf-accent" />
-                    <span>Demo Naturalist Engine</span>
+                    <Cloud className="w-4 h-4 text-leaf-accent" />
+                    <span>Cloud Naturalist Engine</span>
                   </span>
                   <div
                     className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      selectedMode === 'demo'
+                      selectedMode === 'cloud'
                         ? 'border-forest-deep bg-forest-deep'
                         : 'border-border-subtle'
                     }`}
                   >
-                    {selectedMode === 'demo' && <div className="w-1.5 h-1.5 rounded-full bg-paper-white" />}
+                    {selectedMode === 'cloud' && <div className="w-1.5 h-1.5 rounded-full bg-paper-white" />}
                   </div>
                 </div>
                 <p className="text-[11px] text-text-muted leading-relaxed">
-                  Instant response (&lt;3ms), 100% offline. Generates naturalist-verified sensory quests with zero setup or GPU requirements.
+                  Production-grade cloud AI inference. Zero local setup or GPU required. If cloud capacity is exhausted, automatically fails over to local AI or curated field logs.
                 </p>
-                <span className="inline-block mt-2 text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                  Ready Out-of-the-Box
-                </span>
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                    Ready Out-of-the-Box
+                  </span>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-forest-deep/10 text-forest-deep">
+                    Auto-Failover Protection
+                  </span>
+                </div>
               </div>
 
-              {/* Option B: Local Open-Weight AI */}
+              {/* Option B: Local Open-Weight AI (Ollama / Podman) */}
               <div
                 onClick={() => setSelectedMode('ollama')}
                 className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative ${
@@ -268,12 +274,123 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
             </div>
           </div>
 
-          {/* 2. Ollama / Podman Configuration Area (shown when Ollama is selected) */}
+          {/* 2A. Cloud Naturalist Engine Architecture & Failover Area */}
+          {selectedMode === 'cloud' && (
+            <div className="p-4 sm:p-5 rounded-2xl border border-border-subtle bg-parchment-warm/50 space-y-4 animate-in fade-in">
+              <div className="flex items-center justify-between pb-1 border-b border-border-subtle/60">
+                <span className="text-xs font-bold text-forest-deep uppercase tracking-wider flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-moss-green" />
+                  <span>Production AI Architecture & Failover Pipeline</span>
+                </span>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  Zero Downtime
+                </span>
+              </div>
+
+              {/* Visual Pipeline Flow */}
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-moss-green uppercase block">Step 1 • Primary</span>
+                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
+                      <Cloud className="w-3 h-3 text-moss-green" />
+                      <span>Production Cloud AI</span>
+                    </h5>
+                    <p className="text-[10px] text-text-muted leading-tight">
+                      Executes via server-managed cloud models with zero client configuration.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase block">Step 2 • Failover</span>
+                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
+                      <Server className="w-3 h-3 text-amber-700" />
+                      <span>Local AI (Ollama)</span>
+                    </h5>
+                    <p className="text-[10px] text-text-muted leading-tight">
+                      If cloud quota is exhausted or rate-limited, automatically triggers local container.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
+                    <span className="text-[10px] font-bold text-forest-deep uppercase block">Step 3 • Offline</span>
+                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-forest-deep" />
+                      <span>Curated Field Library</span>
+                    </h5>
+                    <p className="text-[10px] text-text-muted leading-tight">
+                      Deterministic naturalist missions ensure 100% reliability even if fully offline.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-paper-white/80 border border-border-subtle text-[11px] text-text-muted leading-relaxed">
+                  💡 <strong>No configuration needed:</strong> Cloud credentials and rate limits are managed directly on the backend server. You never have to configure keys in the browser, and quest generation will never fail.
+                </div>
+              </div>
+
+              {/* Test & Save Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isTesting}
+                  onClick={handleTestConnection}
+                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
+                  <span>{isTesting ? 'Testing Engine Status...' : 'Test Engine Status'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveSettings}
+                  className="px-4 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-forest-deep text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  {savedSuccess ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-700" />
+                      <span className="text-emerald-700 font-bold">Preferences Saved!</span>
+                    </>
+                  ) : (
+                    <span>Save Preference</span>
+                  )}
+                </button>
+              </div>
+
+              {/* Test Result Feedback Box */}
+              {testResult && (
+                <div
+                  className={`p-3 rounded-xl text-xs space-y-1 border animate-in fade-in ${
+                    testResult.status === 'available'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                      : 'bg-amber-50 border-amber-200 text-amber-950'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 font-bold">
+                    {testResult.status === 'available' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                    ) : (
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
+                    )}
+                    <span>
+                      {testResult.status === 'available' ? 'Engine Ready' : 'Status Info'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed opacity-90 pl-6">
+                    {testResult.message}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2B. Ollama / Podman Configuration Area */}
           {selectedMode === 'ollama' && (
-            <div className="p-4 rounded-2xl border border-border-subtle bg-parchment-warm/50 space-y-4 animate-in fade-in">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-forest-deep uppercase tracking-wider">
-                  Ollama / Podman Endpoint & Model
+            <div className="p-4 sm:p-5 rounded-2xl border border-border-subtle bg-parchment-warm/50 space-y-4 animate-in fade-in">
+              <div className="flex items-center justify-between pb-1 border-b border-border-subtle/60">
+                <span className="text-xs font-bold text-forest-deep uppercase tracking-wider flex items-center gap-1.5">
+                  <Server className="w-3.5 h-3.5 text-moss-green" />
+                  <span>Ollama / Podman Endpoint & Model</span>
                 </span>
                 <span className="text-[10px] text-text-muted">Port 11434</span>
               </div>
@@ -299,8 +416,8 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 </label>
                 <input
                   type="text"
-                  value={model}
-                  onChange={e => setModel(e.target.value)}
+                  value={ollamaModel}
+                  onChange={e => setOllamaModel(e.target.value)}
                   placeholder="qwen2.5:3b"
                   className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
                 />
@@ -309,15 +426,15 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 <div className="space-y-2 mt-2">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-[10px] text-text-muted mr-1">Presets:</span>
-                    {popularModels.map(m => {
+                    {popularOllamaModels.map(m => {
                       const isPresetInstalled = isModelInstalled(m.id);
-                      const isSelected = model === m.id;
+                      const isSelected = ollamaModel === m.id;
 
                       return (
                         <button
                           key={m.id}
                           type="button"
-                          onClick={() => setModel(m.id)}
+                          onClick={() => setOllamaModel(m.id)}
                           className={`text-[10px] px-2.5 py-1 rounded-lg border font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
                             isSelected
                               ? 'border-forest-deep bg-forest-deep text-paper-white shadow-2xs font-semibold'
@@ -357,18 +474,18 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                     <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2 animate-in fade-in">
                       <div className="flex items-center gap-1.5 text-amber-950 font-bold">
                         <Download className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>Download "{model}" using Podman</span>
+                        <span>Download "{ollamaModel}" using Podman</span>
                       </div>
                       <p className="text-[11px] text-amber-800 leading-relaxed">
                         This model is not yet downloaded inside your container. Run this command in your PowerShell/terminal:
                       </p>
                       <div className="flex items-center justify-between p-2 rounded-lg bg-forest-deep text-leaf-accent font-mono text-[11px] shadow-2xs">
                         <span className="overflow-x-auto scrollbar-none pr-2">
-                          podman exec -it fieldquest-ai ollama pull {model}
+                          podman exec -it fieldquest-ai ollama pull {ollamaModel}
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${model}`)}
+                          onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${ollamaModel}`)}
                           className="p-1 hover:bg-white/10 rounded cursor-pointer text-paper-white shrink-0"
                           title="Copy Podman pull command"
                         >
@@ -382,7 +499,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                             <button
                               key={mName}
                               type="button"
-                              onClick={() => setModel(mName)}
+                              onClick={() => setOllamaModel(mName)}
                               className="underline font-bold text-forest-deep hover:text-emerald-800 cursor-pointer"
                             >
                               ✓ {mName} (Ready)
@@ -399,7 +516,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                       <div className="flex items-center gap-1.5 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                         <span>
-                          Model <code className="font-mono font-bold bg-white/70 px-1 py-0.5 rounded text-emerald-900">{model}</code> is downloaded & ready in Podman.
+                          Model <code className="font-mono font-bold bg-white/70 px-1 py-0.5 rounded text-emerald-900">{ollamaModel}</code> is downloaded & ready in Podman.
                         </span>
                       </div>
                       <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
@@ -430,7 +547,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   {savedSuccess ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-700" />
-                      <span className="text-emerald-700">Settings Saved!</span>
+                      <span className="text-emerald-700 font-bold">Settings Saved!</span>
                     </>
                   ) : (
                     <span>Save Preference</span>
@@ -441,7 +558,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
               {/* Test Result Feedback Box */}
               {testResult && (
                 <div
-                  className={`p-3 rounded-xl text-xs space-y-1.5 border ${
+                  className={`p-3 rounded-xl text-xs space-y-1.5 border animate-in fade-in ${
                     testResult.status === 'available'
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
                       : 'bg-amber-50 border-amber-200 text-amber-950'
@@ -449,113 +566,37 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 >
                   <div className="flex items-center gap-2 font-bold">
                     {testResult.status === 'available' ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                        <span>Ollama Connected Successfully</span>
-                      </>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
                     ) : (
-                      <>
-                        <AlertCircle className="w-4 h-4 text-amber-700" />
-                        <span>Ollama Status Check</span>
-                      </>
+                      <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
                     )}
+                    <span>
+                      {testResult.status === 'available' ? 'Connection Verified' : 'Connection Warning'}
+                    </span>
                   </div>
-                  <p className="text-[11px] leading-relaxed">{testResult.message}</p>
-
-                  {/* If model needs pulling, show one-click command */}
-                  {testResult.status !== 'available' && (
-                    <div className="pt-1.5">
-                      <span className="text-[10px] text-text-muted block mb-1">
-                        Run this command in your terminal to pull the model:
-                      </span>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-forest-deep text-leaf-accent font-mono text-[10px]">
-                        <span>podman exec -it fieldquest-ai ollama pull {model}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${model}`)}
-                          className="p-1 hover:bg-white/10 rounded cursor-pointer text-paper-white"
-                          title="Copy command"
-                        >
-                          {copiedCommand ? <Check className="w-3 h-3 text-leaf-accent" /> : <Copy className="w-3 h-3" />}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* List installed models if available with one-click sync */}
-                  {testResult.installedModels && testResult.installedModels.length > 0 && (
-                    <div className="pt-2 text-[11px] border-t border-border-subtle/50 mt-1">
-                      <span className="font-semibold text-forest-deep block mb-1">
-                        Installed in your Ollama container:
-                      </span>
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {testResult.installedModels.map(mName => (
-                          <button
-                            key={mName}
-                            type="button"
-                            onClick={() => {
-                              setModel(mName);
-                              localStorage.setItem('fieldquest_ollama_model', mName);
-                            }}
-                            className={`px-2.5 py-1 rounded-lg font-mono text-[10px] border transition-all cursor-pointer flex items-center gap-1 ${
-                              model === mName
-                                ? 'bg-forest-deep text-paper-white border-forest-deep font-bold shadow-2xs'
-                                : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
-                            }`}
-                            title="Click to select this installed model"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            <span>{mName}</span>
-                            <span className="text-[9px] opacity-80">
-                              {model === mName ? '(Active)' : '(Sync)'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-[11px] leading-relaxed opacity-90 pl-6">
+                    {testResult.message}
+                  </p>
                 </div>
               )}
             </div>
           )}
 
-          {/* When Demo is selected, show Save button */}
-          {selectedMode === 'demo' && (
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={handleSaveSettings}
-                className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors cursor-pointer flex items-center gap-1.5"
-              >
-                {savedSuccess ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-leaf-accent" />
-                    <span>Demo Mode Active!</span>
-                  </>
-                ) : (
-                  <span>Save Mode</span>
-                )}
-              </button>
+          {/* 3. Data & Privacy Management */}
+          <div className="space-y-3 pt-4 border-t border-border-subtle">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-forest-deep block">
+                2. Data Privacy & Storage (IndexedDB)
+              </label>
+              <span className="text-[11px] text-text-muted flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-moss-green" />
+                <span>100% Local Storage</span>
+              </span>
             </div>
-          )}
 
-          {/* 3. Privacy & Zero-Tracking Guarantee */}
-          <div className="p-4 rounded-2xl border border-border-subtle bg-paper-white space-y-1.5">
-            <div className="font-bold text-forest-deep flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-700" />
-              <span>Zero-Tracking Privacy Guarantee</span>
-            </div>
             <p className="text-xs text-text-muted leading-relaxed">
-              FieldQuest does not track your location, require sign-in accounts, or upload observations to third-party clouds. All field notes and photos remain securely on this machine in your browser IndexedDB.
+              Your field journals, observation notes, photos, and quest history never leave your browser unless you export them.
             </p>
-          </div>
-
-          {/* 4. Local Data Management */}
-          <div className="p-4 rounded-2xl border border-border-subtle bg-paper-white space-y-3">
-            <div className="font-bold text-forest-deep flex items-center gap-2">
-              <HardDrive className="w-4 h-4 text-moss-green" />
-              <span>Local Data Management</span>
-            </div>
 
             <div className="flex flex-wrap gap-2 pt-1">
               <button
@@ -594,7 +635,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         <div className="mt-6 pt-4 border-t border-border-subtle flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors cursor-pointer shadow-xs"
           >
             Done
           </button>

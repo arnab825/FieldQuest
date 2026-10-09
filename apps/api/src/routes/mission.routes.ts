@@ -9,16 +9,23 @@ missionRouter.post('/generate', async (req: Request, res: Response, next: NextFu
       ? 'demo'
       : (req.query.mode === 'ollama' || req.body?.forcedMode === 'ollama')
       ? 'ollama'
+      : (req.query.mode === 'cloud' || req.body?.forcedMode === 'cloud')
+      ? 'cloud'
       : undefined;
 
     // Remove non-preference fields from payload so they don't fail Zod parsing
-    const { forcedMode: _, model, endpoint, ...preferences } = req.body || {};
+    const { forcedMode: _, model, endpoint, cloudService, apiKey, ...preferences } = req.body || {};
 
     const result = await missionGeneratorService.generateAdventureMissions(
       preferences,
       forcedMode,
       model,
-      endpoint
+      endpoint,
+      {
+        service: cloudService,
+        apiKey,
+        model,
+      }
     );
 
     res.status(200).json(result);
@@ -33,15 +40,22 @@ missionRouter.post('/scaffold', async (req: Request, res: Response, next: NextFu
       ? 'demo'
       : (req.query.mode === 'ollama' || req.body?.forcedMode === 'ollama')
       ? 'ollama'
+      : (req.query.mode === 'cloud' || req.body?.forcedMode === 'cloud')
+      ? 'cloud'
       : undefined;
 
-    const { forcedMode: _, model, endpoint, ...missionData } = req.body || {};
+    const { forcedMode: _, model, endpoint, cloudService, apiKey, ...missionData } = req.body || {};
 
     const result = await missionGeneratorService.generateMissionScaffold(
       missionData,
       forcedMode,
       model,
-      endpoint
+      endpoint,
+      {
+        service: cloudService,
+        apiKey,
+        model,
+      }
     );
 
     res.status(200).json(result);

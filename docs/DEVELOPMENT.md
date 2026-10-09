@@ -60,7 +60,32 @@ Copy the environment template:
 ```bash
 cp .env.example .env
 ```
-Default values work out-of-the-box in Demo Mode (`AI_PROVIDER=demo`).
+
+FieldQuest comes with three ways to run AI inference:
+
+#### Mode 1: Cloud Naturalist Engine (Production Out-of-the-Box)
+Provide either a free Google AI Studio key or Groq Cloud key in `.env`:
+```env
+AI_PROVIDER=cloud
+GEMINI_API_KEY=your_gemini_api_key_here
+# or:
+GROQ_API_KEY=your_groq_api_key_here
+```
+If your cloud quota is exhausted or connection fails, the API automatically falls back to local Ollama (if running) and then to the Curated Demo catalog.
+
+#### Mode 2: Local Open-Weight AI (Ollama)
+For 100% sovereign, private local inference:
+```env
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=qwen2.5:3b
+```
+
+#### Mode 3: Curated Field Library (Zero AI Dependencies)
+To run completely offline with instant curated naturalist missions:
+```env
+AI_PROVIDER=demo
+```
 
 ### 3.3 Running Both Frontend & API in Development
 To run both apps concurrently:
@@ -81,24 +106,24 @@ npm run dev:api
 
 ---
 
-## 4. Setting up Ollama for Real Local AI
+## 4. Setting up Ollama for Local AI
 
-If you want real local open-weight AI inference:
+If you want real local open-weight AI inference on your machine:
 
 1. Install Ollama from [ollama.com](https://ollama.com).
 2. Start the Ollama daemon:
    ```bash
    ollama serve
    ```
-3. Pull the configured default model (`qwen3:4b`):
+3. Pull the configured model (`qwen2.5:3b` or `qwen3:4b`):
    ```bash
-   ollama pull qwen3:4b
+   ollama pull qwen2.5:3b
    ```
-4. Update your `.env` or run the API with:
+4. Update your `.env`:
    ```env
    AI_PROVIDER=ollama
    OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=qwen3:4b
+   OLLAMA_MODEL=qwen2.5:3b
    ```
 5. Restart `npm run dev:api`. The API health check at `http://localhost:4000/api/v1/ai/status` will report `"status": "available"`.
 

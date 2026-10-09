@@ -50,12 +50,19 @@ export const AdventureSetupForm: React.FC = () => {
 
   // Query AI Status
   const { data: aiStatus, refetch: refetchAIStatus } = useQuery<AIProviderStatus>({
-    queryKey: ['aiStatus', forcedDemoMode ? 'demo' : 'ollama'],
+    queryKey: ['aiStatus', forcedDemoMode ? 'demo' : 'active'],
     queryFn: () => {
-      const mode = forcedDemoMode ? 'demo' : (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'ollama';
-      const model = localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
+      const mode = forcedDemoMode ? 'demo' : (localStorage.getItem('fieldquest_ai_mode') as 'cloud' | 'ollama' | 'demo') || 'cloud';
+      const cloudService = (localStorage.getItem('fieldquest_cloud_service') as 'gemini' | 'groq') || 'gemini';
+      const cloudApiKey = cloudService === 'groq'
+        ? localStorage.getItem('fieldquest_groq_api_key') || undefined
+        : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
+      const cloudModel = cloudService === 'groq'
+        ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+      const model = mode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b');
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
-      return fetchAIStatus(mode, model, endpoint);
+      return fetchAIStatus(mode, model, endpoint, cloudService, cloudApiKey);
     },
     staleTime: 15000,
   });
@@ -63,11 +70,19 @@ export const AdventureSetupForm: React.FC = () => {
   // Mutation for mission generation
   const generateMutation = useMutation({
     mutationFn: (prefs: AdventurePreferences) => {
-      const savedMode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'demo';
+      const savedMode = (localStorage.getItem('fieldquest_ai_mode') as 'cloud' | 'ollama' | 'demo') || 'cloud';
       const activeMode = forcedDemoMode ? 'demo' : savedMode;
-      const model = localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
+      const cloudService = (localStorage.getItem('fieldquest_cloud_service') as 'gemini' | 'groq') || 'gemini';
+      const cloudApiKey = cloudService === 'groq'
+        ? localStorage.getItem('fieldquest_groq_api_key') || undefined
+        : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
+      const cloudModel = cloudService === 'groq'
+        ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+
+      const model = activeMode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b');
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
-      return requestGenerateMissions(prefs, activeMode, model, endpoint);
+      return requestGenerateMissions(prefs, activeMode, model, endpoint, cloudService, cloudApiKey);
     },
     onSuccess: async (data) => {
       await startSession({

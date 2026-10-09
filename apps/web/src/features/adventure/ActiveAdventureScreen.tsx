@@ -447,9 +447,16 @@ export const ActiveAdventureScreen: React.FC = () => {
     setIsScaffolding(true);
     setScaffoldModelUsed(null);
     try {
-      const mode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'ollama';
+      const mode = (localStorage.getItem('fieldquest_ai_mode') as 'cloud' | 'ollama' | 'demo') || 'cloud';
+      const cloudService = (localStorage.getItem('fieldquest_cloud_service') as 'gemini' | 'groq') || 'gemini';
+      const cloudApiKey = cloudService === 'groq'
+        ? localStorage.getItem('fieldquest_groq_api_key') || undefined
+        : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
+      const cloudModel = cloudService === 'groq'
+        ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+      const model = mode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || undefined);
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || undefined;
-      const model = localStorage.getItem('fieldquest_ollama_model') || undefined;
 
       const result = await requestMissionScaffold(
         {
@@ -461,7 +468,9 @@ export const ActiveAdventureScreen: React.FC = () => {
         },
         mode,
         model,
-        endpoint
+        endpoint,
+        cloudService,
+        cloudApiKey
       );
 
       if (result?.scaffold) {

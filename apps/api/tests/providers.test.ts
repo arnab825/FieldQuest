@@ -49,3 +49,32 @@ describe('DemoMissionProvider', () => {
     expect(missions[0].instructions.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+describe('CloudMissionProvider & Fallback', () => {
+  it('reports status and friendly message when no API key is set', async () => {
+    const { CloudMissionProvider } = await import('../src/providers/cloud.provider.js');
+    const cloud = new CloudMissionProvider();
+    const status = await cloud.checkAvailability();
+    expect(status.provider).toBe('cloud');
+    expect(status.available).toBe(false);
+    expect(status.message).toContain('API key');
+  });
+
+  it('missionGeneratorService falls back to demo missions seamlessly when in cloud mode without keys', async () => {
+    const { MissionGeneratorService } = await import('../src/services/mission-generator.service.js');
+    const service = new MissionGeneratorService();
+    const prefs: AdventurePreferences = {
+      durationMinutes: 15,
+      environment: 'park',
+      interests: ['plants'],
+      difficulty: 'easy',
+      language: 'en',
+      accessibleMobility: false,
+    };
+
+    const result = await service.generateAdventureMissions(prefs, 'cloud');
+    expect(result.sessionId).toBeDefined();
+    expect(result.missions.length).toBeGreaterThanOrEqual(3);
+    expect(result.missions[0].title).toBeDefined();
+  });
+});

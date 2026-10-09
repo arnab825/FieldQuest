@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export interface GenerateMissionsResult {
   sessionId: string;
-  provider: 'ollama' | 'demo';
+  provider: 'ollama' | 'demo' | 'cloud';
   model: string;
   generatedAt: string;
   preferences: AdventurePreferences;
@@ -18,14 +18,18 @@ export async function fetchHealth(): Promise<{ status: string; service: string }
 }
 
 export async function fetchAIStatus(
-  mode?: 'demo' | 'ollama',
+  mode?: 'demo' | 'ollama' | 'cloud',
   model?: string,
-  endpoint?: string
+  endpoint?: string,
+  cloudService?: 'gemini' | 'groq',
+  apiKey?: string
 ): Promise<AIProviderStatus> {
   const params = new URLSearchParams();
   if (mode) params.set('mode', mode);
   if (model) params.set('model', model);
   if (endpoint) params.set('endpoint', endpoint);
+  if (cloudService) params.set('cloudService', cloudService);
+  if (apiKey) params.set('apiKey', apiKey);
   const query = params.toString() ? `?${params.toString()}` : '';
 
   const res = await fetch(`${API_BASE_URL}/api/v1/ai/status${query}`);
@@ -33,8 +37,9 @@ export async function fetchAIStatus(
     return {
       available: false,
       status: 'unavailable',
-      provider: mode || 'ollama',
+      provider: mode || 'cloud',
       model: model || 'unknown',
+      cloudService,
       message: 'Failed to contact backend API service.',
     };
   }
@@ -42,9 +47,11 @@ export async function fetchAIStatus(
 }
 
 export async function saveAIConfig(data: {
-  mode?: 'demo' | 'ollama';
+  mode?: 'demo' | 'ollama' | 'cloud';
   model?: string;
   endpoint?: string;
+  cloudService?: 'gemini' | 'groq';
+  apiKey?: string;
 }): Promise<{ success: boolean; status: AIProviderStatus }> {
   const res = await fetch(`${API_BASE_URL}/api/v1/ai/configure`, {
     method: 'POST',
@@ -59,9 +66,11 @@ export async function saveAIConfig(data: {
 
 export async function requestGenerateMissions(
   preferences: AdventurePreferences,
-  forcedMode?: 'ollama' | 'demo',
+  forcedMode?: 'ollama' | 'demo' | 'cloud',
   model?: string,
-  endpoint?: string
+  endpoint?: string,
+  cloudService?: 'gemini' | 'groq',
+  apiKey?: string
 ): Promise<GenerateMissionsResult> {
   const res = await fetch(`${API_BASE_URL}/api/v1/missions/generate`, {
     method: 'POST',
@@ -74,6 +83,8 @@ export async function requestGenerateMissions(
       forcedMode,
       model,
       endpoint,
+      cloudService,
+      apiKey,
     }),
   });
 
@@ -92,7 +103,7 @@ export async function requestGenerateMissions(
 
 export interface MissionScaffoldResult {
   scaffold: string;
-  provider: 'ollama' | 'demo';
+  provider: 'ollama' | 'demo' | 'cloud';
   model: string;
 }
 
@@ -104,9 +115,11 @@ export async function requestMissionScaffold(
     observationCriteria?: string[];
     customNotes?: string;
   },
-  forcedMode?: 'ollama' | 'demo',
+  forcedMode?: 'ollama' | 'demo' | 'cloud',
   model?: string,
-  endpoint?: string
+  endpoint?: string,
+  cloudService?: 'gemini' | 'groq',
+  apiKey?: string
 ): Promise<MissionScaffoldResult> {
   const res = await fetch(`${API_BASE_URL}/api/v1/missions/scaffold`, {
     method: 'POST',
@@ -119,6 +132,8 @@ export async function requestMissionScaffold(
       forcedMode,
       model,
       endpoint,
+      cloudService,
+      apiKey,
     }),
   });
 
