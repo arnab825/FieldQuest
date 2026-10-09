@@ -145,28 +145,32 @@ FieldQuest provides first-class support for **[Podman](https://podman.io/)** and
 From your project directory:
 
 ```bash
-# 1. Build the container images
+# 1. Build the container images (Web & API)
 npm run podman:build
 
-# 2. Start the containers in the background
+# 2. Start all 3 containers (Web, API, and Ollama AI Engine)
 npm run podman:up
 
-# 3. View live streaming logs
+# 3. Pull your open-weight AI model inside the container (e.g., qwen2.5:3b)
+npm run podman:pull-model
+
+# 4. View live streaming logs
 npm run podman:logs
 
-# 4. Stop when done
+# 5. Stop when done
 npm run podman:down
 ```
 
 ### Option 2: Directly in Podman Desktop UI
 1. Open **[Podman Desktop](https://podman-desktop.io/)**.
 2. Go to the **Containers** or **Pods** view in the sidebar.
-3. Once you launch the stack (`npm run podman:up`), both `fieldquest-web` and `fieldquest-api` will be visible in your Podman Desktop dashboard.
+3. Once you launch the stack (`npm run podman:up`), all 3 services (`fieldquest-web`, `fieldquest-api`, and `fieldquest-ai`) will be visible in your Podman Desktop dashboard.
 4. You can inspect live CPU/RAM resource usage, click into real-time container logs, and pause or stop containers with one click.
 
 ### Application Endpoints
 - 🌿 **Web PWA:** [http://localhost:5173](http://localhost:5173/)
 - ⚙️ **API Status:** [http://localhost:4000](http://localhost:4000/)
+- 🧠 **Ollama AI Engine:** [http://localhost:11434](http://localhost:11434/)
 - 🩺 **API Health Check:** [http://localhost:4000/api/v1/health](http://localhost:4000/api/v1/health)
 
 ---

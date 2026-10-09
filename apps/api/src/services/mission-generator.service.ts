@@ -47,21 +47,27 @@ export class MissionGeneratorService {
     }
 
     const preferences: AdventurePreferences = preferencesResult.data;
-    const provider = this.getProvider(forcedMode);
+    let provider = this.getProvider(forcedMode);
 
     let missions: NatureMission[];
     try {
       missions = await provider.generateMissions(preferences);
     } catch (err: any) {
-      // Re-throw provider errors or wrap unexpected errors
-      if (err instanceof AIProviderError) {
-        throw err;
+      // If configured for Ollama but model is not yet pulled or container is warming up, gracefully fallback
+      if (provider.providerId === 'ollama') {
+        console.warn(`[FieldQuest AI] Ollama provider unavailable or model pending (${err.message}). Gracefully serving naturalist curated demo missions.`);
+        provider = this.demoProvider;
+        missions = await this.demoProvider.generateMissions(preferences);
+      } else {
+        if (err instanceof AIProviderError) {
+          throw err;
+        }
+        throw new AIProviderError(
+          'AI_GENERATION_FAILED',
+          `Unexpected error during mission generation: ${err.message}`,
+          err
+        );
       }
-      throw new AIProviderError(
-        'AI_GENERATION_FAILED',
-        `Unexpected error during mission generation: ${err.message}`,
-        err
-      );
     }
 
     // Defensive check: ensure every mission has essential safety text

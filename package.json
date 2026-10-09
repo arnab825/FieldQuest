@@ -18,7 +18,9 @@
     "podman:build": "podman compose build",
     "podman:up": "podman compose up -d",
     "podman:down": "podman compose down",
-    "podman:logs": "podman compose logs -f"
+    "podman:logs": "podman compose logs -f",
+    "podman:pull-model": "podman exec -it fieldquest-ai ollama pull qwen2.5:3b",
+    "podman:models": "podman exec -it fieldquest-ai ollama list"
   },
   "keywords": [
     "nature-exploration",
