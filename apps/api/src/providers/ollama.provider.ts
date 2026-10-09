@@ -53,6 +53,7 @@ export class OllamaMissionProvider implements AIMissionProvider {
         provider: 'ollama',
         model: this.modelId,
         endpoint: this.baseUrl,
+        installedModels: models.map(m => m.name),
         message: hasConfiguredModel
           ? `Ollama is ready with model ${this.modelId}`
           : `Ollama is reachable, but model "${this.modelId}" may need to be pulled (run "ollama pull ${this.modelId}").`

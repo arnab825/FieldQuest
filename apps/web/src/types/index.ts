@@ -89,4 +89,5 @@ export interface AIProviderStatus {
   endpoint?: string;
   message: string;
   error?: string;
+  installedModels?: string[];
 }

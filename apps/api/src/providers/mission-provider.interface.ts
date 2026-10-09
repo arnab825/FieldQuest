@@ -9,6 +9,7 @@ export interface ProviderAvailability {
   endpoint?: string;
   message: string;
   error?: string;
+  installedModels?: string[];
 }
 
 export interface AIMissionProvider {

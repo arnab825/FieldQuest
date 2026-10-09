@@ -37,7 +37,9 @@ export const AdventureSetupForm: React.FC = () => {
   const [difficulty, setDifficulty] = useState<Difficulty>('easy');
   const [accessibleMobility, setAccessibleMobility] = useState<boolean>(false);
   const [customFocus, setCustomFocus] = useState<string>('');
-  const [forcedDemoMode, setForcedDemoMode] = useState<boolean>(false);
+  const [forcedDemoMode, setForcedDemoMode] = useState<boolean>(() => {
+    return localStorage.getItem('fieldquest_ai_mode') === 'demo';
+  });
 
   // Query AI Status
   const { data: aiStatus, refetch: refetchAIStatus } = useQuery<AIProviderStatus>({
@@ -48,8 +50,11 @@ export const AdventureSetupForm: React.FC = () => {
 
   // Mutation for mission generation
   const generateMutation = useMutation({
-    mutationFn: (prefs: AdventurePreferences) =>
-      requestGenerateMissions(prefs, forcedDemoMode ? 'demo' : undefined),
+    mutationFn: (prefs: AdventurePreferences) => {
+      const savedMode = (localStorage.getItem('fieldquest_ai_mode') as 'demo' | 'ollama') || 'demo';
+      const activeMode = forcedDemoMode ? 'demo' : savedMode;
+      return requestGenerateMissions(prefs, activeMode);
+    },
     onSuccess: async (data) => {
       await startSession({
         id: data.sessionId,
