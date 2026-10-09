@@ -1,0 +1,377 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import {
+  Compass,
+  Clock,
+  MapPin,
+  Sparkles,
+  TreePine,
+  Volume2,
+  Flower2,
+  Bug,
+  Bird,
+  Layers,
+  Accessibility,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
+import {
+  AdventurePreferences,
+  EnvironmentType,
+  InterestType,
+  Difficulty,
+  AIProviderStatus,
+} from '../../types/index.js';
+import { requestGenerateMissions, fetchAIStatus } from '../../services/api.js';
+import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
+
+export const AdventureSetupForm: React.FC = () => {
+  const navigate = useNavigate();
+  const startSession = useAdventureSessionStore(s => s.startSession);
+
+  // Form State with sensible defaults
+  const [duration, setDuration] = useState<15 | 30 | 60>(15);
+  const [environment, setEnvironment] = useState<EnvironmentType>('park');
+  const [interests, setInterests] = useState<InterestType[]>(['plants', 'sounds']);
+  const [difficulty, setDifficulty] = useState<Difficulty>('easy');
+  const [accessibleMobility, setAccessibleMobility] = useState<boolean>(false);
+  const [customFocus, setCustomFocus] = useState<string>('');
+  const [forcedDemoMode, setForcedDemoMode] = useState<boolean>(false);
+
+  // Query AI Status
+  const { data: aiStatus, refetch: refetchAIStatus } = useQuery<AIProviderStatus>({
+    queryKey: ['aiStatus', forcedDemoMode ? 'demo' : 'ollama'],
+    queryFn: () => fetchAIStatus(forcedDemoMode ? 'demo' : 'ollama'),
+    staleTime: 15000,
+  });
+
+  // Mutation for mission generation
+  const generateMutation = useMutation({
+    mutationFn: (prefs: AdventurePreferences) =>
+      requestGenerateMissions(prefs, forcedDemoMode ? 'demo' : undefined),
+    onSuccess: async (data) => {
+      await startSession({
+        id: data.sessionId,
+        createdAt: data.generatedAt,
+        durationMinutes: data.preferences.durationMinutes,
+        environment: data.preferences.environment,
+        difficulty: data.preferences.difficulty,
+        language: 'en',
+        interests: data.preferences.interests,
+        accessibleMobility: data.preferences.accessibleMobility,
+        missions: data.missions,
+        status: 'in_progress',
+        totalMinutesSpent: 0,
+        providerUsed: data.provider,
+        modelUsed: data.model,
+      });
+
+      navigate('/adventure');
+    },
+  });
+
+  const toggleInterest = (interest: InterestType) => {
+    if (interests.includes(interest)) {
+      if (interests.length > 1) {
+        setInterests(interests.filter(i => i !== interest));
+      }
+    } else {
+      if (interests.length < 5) {
+        setInterests([...interests, interest]);
+      }
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const prefs: AdventurePreferences = {
+      durationMinutes: duration,
+      environment,
+      interests,
+      difficulty,
+      language: 'en',
+      accessibleMobility,
+      customFocus: customFocus.trim() || undefined,
+    };
+    generateMutation.mutate(prefs);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+      {/* Header */}
+      <div className="mb-8 text-center sm:text-left">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-deep/10 text-forest-deep text-xs font-semibold mb-3">
+          <Compass className="w-3.5 h-3.5 text-moss-green" />
+          <span>Adventure Configuration</span>
+        </div>
+        <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-forest-deep mb-2">
+          Plan Your Nature Quest
+        </h1>
+        <p className="text-sm text-text-muted">
+          Select your time, setting, and interests. AI generates safe observational quests tailored to your surroundings.
+        </p>
+      </div>
+
+      {/* AI Provider Status Banner */}
+      {aiStatus && aiStatus.status === 'unavailable' && !forcedDemoMode && (
+        <div className="mb-8 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-950">
+                Local AI (Ollama) is currently unreachable
+              </p>
+              <p className="text-amber-800 text-xs mt-0.5">
+                You can explore with our instant curated naturalist engine (Demo Mode).
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setForcedDemoMode(true)}
+            className="px-3 py-1.5 rounded-lg bg-amber-800 text-amber-50 font-medium hover:bg-amber-900 transition-colors text-xs whitespace-nowrap self-end sm:self-auto cursor-pointer"
+          >
+            Switch to Demo Mode
+          </button>
+        </div>
+      )}
+
+      {forcedDemoMode && (
+        <div className="mb-8 p-3 rounded-xl border border-moss-green/30 bg-forest-deep/5 text-forest-deep text-xs flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-moss-green" />
+            <span>
+              Demo Mode Active: Deterministic curated naturalist missions.
+            </span>
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setForcedDemoMode(false);
+              refetchAIStatus();
+            }}
+            className="text-xs text-forest-deep font-semibold underline hover:text-forest-dark cursor-pointer"
+          >
+            Retry Ollama
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Duration Selection */}
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs">
+          <label className="flex items-center gap-2 text-sm font-bold text-forest-deep mb-3 font-editorial">
+            <Clock className="w-4 h-4 text-moss-green" />
+            <span>1. Available Time</span>
+          </label>
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { mins: 15, label: '15 min', sub: 'Sensory Walk' },
+              { mins: 30, label: '30 min', sub: 'Field Observation' },
+              { mins: 60, label: '60 min', sub: 'Deep Expedition' },
+            ].map(item => (
+              <button
+                key={item.mins}
+                type="button"
+                onClick={() => setDuration(item.mins as 15 | 30 | 60)}
+                className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                  duration === item.mins
+                    ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                    : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
+                }`}
+              >
+                <div className="font-editorial text-lg font-bold">
+                  {item.label}
+                </div>
+                <div className={`text-[11px] ${duration === item.mins ? 'text-leaf-accent' : 'text-text-muted'}`}>
+                  {item.sub}
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Environment Selection */}
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs">
+          <label className="flex items-center gap-2 text-sm font-bold text-forest-deep mb-3 font-editorial">
+            <MapPin className="w-4 h-4 text-moss-green" />
+            <span>2. Your Immediate Environment</span>
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+            {[
+              { id: 'park', name: 'City Park' },
+              { id: 'garden', name: 'Garden' },
+              { id: 'urban', name: 'Urban Street' },
+              { id: 'trail', name: 'Nature Trail' },
+              { id: 'balcony', name: 'Balcony / Porch' },
+            ].map(env => (
+              <button
+                key={env.id}
+                type="button"
+                onClick={() => setEnvironment(env.id as EnvironmentType)}
+                className={`p-3 rounded-xl border text-xs font-medium transition-all text-center cursor-pointer ${
+                  environment === env.id
+                    ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                    : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
+                }`}
+              >
+                {env.name}
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {/* Interests Selection */}
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <label className="flex items-center gap-2 text-sm font-bold text-forest-deep font-editorial">
+              <Flower2 className="w-4 h-4 text-moss-green" />
+              <span>3. What do you want to observe?</span>
+            </label>
+            <span className="text-xs text-text-muted">
+              {interests.length}/5 selected
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { id: 'plants', icon: Flower2, name: 'Plants & Leaves' },
+              { id: 'birds', icon: Bird, name: 'Birds & Calls' },
+              { id: 'insects', icon: Bug, name: 'Insects & Spiders' },
+              { id: 'trees', icon: TreePine, name: 'Trees & Bark' },
+              { id: 'sounds', icon: Volume2, name: 'Sounds & Wind' },
+              { id: 'patterns', icon: Layers, name: 'Textures & Patterns' },
+              { id: 'biodiversity', icon: Sparkles, name: 'Micro-Habitats' },
+            ].map(item => {
+              const Icon = item.icon;
+              const isSelected = interests.includes(item.id as InterestType);
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => toggleInterest(item.id as InterestType)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-medium border flex items-center gap-2 transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-forest-deep text-paper-white border-forest-deep'
+                      : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
+                  }`}
+                >
+                  <Icon className={`w-3.5 h-3.5 ${isSelected ? 'text-leaf-accent' : 'text-moss-green'}`} />
+                  <span>{item.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Difficulty & Accessibility Options */}
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs space-y-4">
+          <label className="flex items-center gap-2 text-sm font-bold text-forest-deep font-editorial">
+            <Accessibility className="w-4 h-4 text-moss-green" />
+            <span>4. Depth & Mobility Options</span>
+          </label>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Difficulty Toggle */}
+            <div className="flex items-center gap-2 p-3 rounded-xl border border-border-subtle bg-parchment-warm/40">
+              <span className="text-xs font-semibold text-forest-deep w-20">
+                Difficulty:
+              </span>
+              <div className="flex gap-1.5 flex-1">
+                {(['easy', 'exploratory'] as Difficulty[]).map(d => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setDifficulty(d)}
+                    className={`flex-1 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                      difficulty === d
+                        ? 'bg-forest-deep text-paper-white'
+                        : 'bg-paper-white text-forest-deep hover:bg-parchment-warm border border-border-subtle'
+                    }`}
+                  >
+                    {d === 'easy' ? 'Easy' : 'Exploratory'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Mobility Toggle */}
+            <label className="flex items-center justify-between p-3 rounded-xl border border-border-subtle bg-parchment-warm/40 cursor-pointer">
+              <span className="text-xs font-medium text-forest-deep">
+                Stationary / Seated observation only
+              </span>
+              <input
+                type="checkbox"
+                checked={accessibleMobility}
+                onChange={e => setAccessibleMobility(e.target.checked)}
+                className="w-4 h-4 rounded text-forest-deep accent-forest-deep cursor-pointer"
+              />
+            </label>
+          </div>
+
+          {/* Optional Custom Focus */}
+          <div>
+            <label className="block text-xs font-medium text-text-muted mb-1">
+              Custom observation focus (optional):
+            </label>
+            <input
+              type="text"
+              value={customFocus}
+              onChange={e => setCustomFocus(e.target.value)}
+              placeholder="e.g. Look for moss on brick walls or listening near water"
+              className="w-full px-3.5 py-2 text-xs rounded-xl border border-border-subtle bg-paper-white focus:outline-none focus:border-forest-deep"
+              maxLength={100}
+            />
+          </div>
+        </section>
+
+        {/* Error Notice */}
+        {generateMutation.isError && (
+          <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-900 text-xs sm:text-sm space-y-2">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertCircle className="w-4 h-4 text-red-700" />
+              <span>Mission Generation Encountered an Issue</span>
+            </div>
+            <p className="text-red-800">
+              {(generateMutation.error as any)?.message || 'Service unavailable'}
+            </p>
+            <div className="pt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setForcedDemoMode(true);
+                  handleSubmit(new Event('submit') as any);
+                }}
+                className="px-3 py-1.5 rounded-lg bg-red-800 text-white font-medium hover:bg-red-900 transition-colors text-xs cursor-pointer"
+              >
+                Run in Demo Mode Instead
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Submit Button */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            disabled={generateMutation.isPending}
+            className="w-full py-4 rounded-xl bg-forest-deep text-paper-white font-medium text-base shadow-md hover:bg-forest-dark transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+          >
+            {generateMutation.isPending ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin text-leaf-accent" />
+                <span>Generating Nature Quests...</span>
+              </>
+            ) : (
+              <>
+                <Compass className="w-5 h-5 text-leaf-accent" />
+                <span>Begin {duration}-Minute Adventure</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};

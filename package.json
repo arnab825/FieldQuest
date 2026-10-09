@@ -1,0 +1,33 @@
+{
+  "name": "fieldquest-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "FieldQuest: Open-source, AI-powered, offline-first nature exploration PWA",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "keywords": [
+    "nature-exploration",
+    "pwa",
+    "offline-first",
+    "open-weight-ai",
+    "qwen",
+    "ollama",
+    "indexeddb",
+    "dexie",
+    "react19",
+    "forest-atelier"
+  ],
+  "author": "FieldQuest Contributors",
+  "license": "MIT"
+}

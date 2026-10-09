@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-forest-deep: #173D32;
+  --color-forest-dark: #102C25;
+  --color-moss-green: #71866B;
+  --color-leaf-accent: #B8E986;
+  --color-parchment-warm: #F5F2E8;
+  --color-paper-white: #FFFEFA;
+  --color-bark-brown: #806A55;
+  --color-text-muted: #66756A;
+  --color-border-subtle: #DDE3D5;
+
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  :root {
+    --bg-parchment: #F5F2E8;
+    --card-paper: #FFFEFA;
+    --text-primary: #173D32;
+    --text-muted: #66756A;
+    --border-color: #DDE3D5;
+    --accent-leaf: #B8E986;
+  }
+
+  body {
+    background-color: var(--bg-parchment);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  h1, h2, h3, h4, .font-editorial {
+    font-family: var(--font-serif);
+  }
+}
+
+/* Botanical paper background texture effect */
+.parchment-texture {
+  background-color: #F5F2E8;
+  background-image: radial-gradient(#173D32 0.4px, transparent 0.4px), radial-gradient(#71866B 0.4px, #F5F2E8 0.4px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+  background-opacity: 0.04;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F5F2E8;
+}
+::-webkit-scrollbar-thumb {
+  background: #DDE3D5;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #71866B;
+}
