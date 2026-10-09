@@ -32,6 +32,7 @@ import {
   BOTANICAL_FIELD_PLATES,
   generateCustomBotanicalIllustration,
 } from '../../lib/sketch-generator.js';
+import { FilterBar } from '../../components/common/FilterBar.js';
 import { requestMissionScaffold } from '../../services/api.js';
 import { NatureMission } from '../../types/index.js';
 
@@ -519,7 +520,7 @@ export const ActiveAdventureScreen: React.FC = () => {
       {/* Visual Reference Plate Modal */}
       {showReferencePlate && (
         <div className="fixed inset-0 z-50 bg-forest-dark/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto">
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto scrollbar-none">
             <button
               onClick={() => setShowReferencePlate(false)}
               className="absolute top-4 right-4 p-2 rounded-lg text-text-muted hover:text-forest-deep transition-colors cursor-pointer"
@@ -536,36 +537,28 @@ export const ActiveAdventureScreen: React.FC = () => {
               </h3>
             </div>
 
-            {/* Toggle Between Plates */}
-            <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none">
-              {customPlate && (
-                <button
-                  type="button"
-                  onClick={() => setReferencePlateId('custom-ai-plate')}
-                  className={`py-2 px-3.5 rounded-xl text-xs font-bold border transition-colors shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                    referencePlateId === 'custom-ai-plate'
-                      ? 'bg-emerald-800 text-paper-white border-emerald-900 shadow-xs'
-                      : 'bg-emerald-50 text-emerald-950 border-emerald-300 hover:bg-emerald-100'
-                  }`}
-                >
-                  <Sparkles className="w-3.5 h-3.5 text-leaf-accent" />
-                  <span>✨ Custom AI Plate</span>
-                </button>
-              )}
-              {BOTANICAL_FIELD_PLATES.map(plate => (
-                <button
-                  key={plate.id}
-                  type="button"
-                  onClick={() => setReferencePlateId(plate.id)}
-                  className={`py-2 px-3 rounded-xl text-xs font-semibold border transition-colors shrink-0 cursor-pointer ${
-                    referencePlateId === plate.id
-                      ? 'bg-forest-deep text-paper-white border-forest-deep'
-                      : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
-                  }`}
-                >
-                  {plate.plateNumber}: {plate.shortName || plate.title.split(' ')[0]}
-                </button>
-              ))}
+            {/* Toggle Between Plates with Reusable FilterBar */}
+            <div className="mb-4">
+              <FilterBar
+                items={[
+                  ...(customPlate
+                    ? [
+                        {
+                          id: 'custom-ai-plate',
+                          label: '✨ Custom AI Plate',
+                        },
+                      ]
+                    : []),
+                  ...BOTANICAL_FIELD_PLATES.map(plate => ({
+                    id: plate.id,
+                    label: `${plate.plateNumber}: ${plate.shortName || plate.title.split(' ')[0]}`,
+                  })),
+                ]}
+                selectedId={referencePlateId}
+                onSelect={(id) => setReferencePlateId(id)}
+                variant="pills"
+                size="md"
+              />
             </div>
 
             {/* Direct In-Place Plate Image Updater Bar */}
@@ -724,250 +717,236 @@ export const ActiveAdventureScreen: React.FC = () => {
       )}
 
       {/* Top Session Status Bar */}
-      <div className="bg-paper-white rounded-2xl border border-border-subtle p-4 mb-6 shadow-xs flex items-center justify-between gap-3">
+      <div className="bg-paper-white rounded-2xl border border-border-subtle p-3 sm:p-4 mb-4 sm:mb-6 shadow-xs flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
         {/* Left: Mission Indicator */}
-        <div>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-moss-green block">
-            Active Adventure
-          </span>
-          <div className="flex items-center gap-2 mt-0.5">
-            <span className="font-editorial text-lg font-bold text-forest-deep">
-              Mission {currentMissionIndex + 1}
+        <div className="flex items-center gap-2">
+          <div className="space-y-0.5">
+            <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-moss-green block">
+              Active Quest
             </span>
-            <span className="text-xs text-text-muted">
-              of {session.missions.length}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-editorial text-base sm:text-lg font-bold text-forest-deep">
+                Mission {currentMissionIndex + 1}
+              </span>
+              <span className="text-[11px] sm:text-xs text-text-muted">
+                / {session.missions.length}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Center: Live Timer & Pause */}
-        <div className="flex items-center gap-2 bg-parchment-warm px-3 py-1.5 rounded-xl border border-border-subtle">
-          <Clock className="w-4 h-4 text-forest-deep" />
-          <span className="font-mono text-sm font-bold text-forest-deep">
-            {timeFormatted}
-          </span>
+        {/* Right Group: Live Timer & Screen Down */}
+        <div className="flex items-center gap-2 ml-auto sm:ml-0">
+          {/* Live Timer & Pause */}
+          <div className="flex items-center gap-1.5 sm:gap-2 bg-parchment-warm px-2.5 sm:px-3 py-1.5 rounded-xl border border-border-subtle">
+            <Clock className="w-3.5 h-3.5 text-forest-deep" />
+            <span className="font-mono text-xs sm:text-sm font-bold text-forest-deep">
+              {timeFormatted}
+            </span>
+            <button
+              onClick={togglePause}
+              className="p-1 text-forest-deep hover:text-forest-dark transition-colors cursor-pointer"
+              title={isPaused ? 'Resume Timer' : 'Pause Timer'}
+            >
+              {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-700" /> : <Pause className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {/* Screen-Down Toggle Button */}
           <button
-            onClick={togglePause}
-            className="p-1 text-forest-deep hover:text-forest-dark transition-colors cursor-pointer"
-            title={isPaused ? 'Resume Timer' : 'Pause Timer'}
+            onClick={() => setScreenDown(true)}
+            className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl bg-forest-dark text-paper-white text-xs font-semibold flex items-center gap-1.5 hover:bg-forest-deep transition-colors shadow-xs cursor-pointer"
+            title="Dim screen and explore with your senses"
           >
-            {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-700" /> : <Pause className="w-3.5 h-3.5" />}
+            <Moon className="w-3.5 h-3.5 text-leaf-accent" />
+            <span className="hidden xs:inline">Screen Down</span>
+            <span className="xs:hidden">Dim</span>
           </button>
         </div>
-
-        {/* Right: Screen-Down Toggle Button */}
-        <button
-          onClick={() => setScreenDown(true)}
-          className="px-3.5 py-2 rounded-xl bg-forest-dark text-paper-white text-xs font-semibold flex items-center gap-1.5 hover:bg-forest-deep transition-colors shadow-xs cursor-pointer"
-          title="Dim screen and explore with your senses"
-        >
-          <Moon className="w-3.5 h-3.5 text-leaf-accent" />
-          <span>Screen Down</span>
-        </button>
       </div>
 
-          {/* Mission Stepper Dots */}
-          <div className="flex items-center gap-2 mb-6 px-1">
-            {session.missions.map((m, idx) => {
-              const isCurrent = idx === currentMissionIndex;
-              const isCompleted = m.status === 'completed';
-              const isSkipped = m.status === 'skipped';
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => goToMission(idx, notes, photoUrl)}
-                  className={`h-2.5 rounded-full transition-all flex-1 cursor-pointer ${
-                    isCompleted
-                      ? 'bg-emerald-600'
-                      : isSkipped
-                      ? 'bg-bark-brown/40'
-                      : isCurrent
-                      ? 'bg-forest-deep'
-                      : 'bg-border-subtle'
-                  }`}
-                  title={`Mission ${idx + 1}: ${m.title}`}
-                />
-              );
-            })}
+      {/* Mission Stepper Dots */}
+      <div className="flex items-center gap-1.5 sm:gap-2 mb-4 sm:mb-6 px-1">
+        {session.missions.map((m, idx) => {
+          const isCurrent = idx === currentMissionIndex;
+          const isCompleted = m.status === 'completed';
+          const isSkipped = m.status === 'skipped';
+          return (
+            <button
+              key={m.id}
+              onClick={() => goToMission(idx, notes, photoUrl)}
+              className={`h-2.5 sm:h-3 rounded-full transition-all flex-1 cursor-pointer py-1 ${
+                isCompleted
+                  ? 'bg-emerald-600'
+                  : isSkipped
+                  ? 'bg-bark-brown/40'
+                  : isCurrent
+                  ? 'bg-forest-deep ring-2 ring-forest-deep/20'
+                  : 'bg-border-subtle hover:bg-forest-deep/30'
+              }`}
+              title={`Mission ${idx + 1}: ${m.title}`}
+            />
+          );
+        })}
+      </div>
+
+      {/* Main Mission Focus Card */}
+      <div className="bg-paper-white rounded-3xl border border-border-subtle p-4 sm:p-8 shadow-sm space-y-5 sm:space-y-6">
+        {/* Card Header */}
+        <div className="border-b border-border-subtle pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-forest-deep/5 text-forest-deep mb-2">
+              ⏱️ {currentMission.estimatedMinutes} mins • {session.environment}
+            </span>
+            <h1 className="font-editorial text-xl sm:text-3xl font-bold text-forest-deep">
+              {currentMission.title}
+            </h1>
           </div>
 
-          {/* Main Mission Focus Card */}
-          <div className="bg-paper-white rounded-3xl border border-border-subtle p-6 sm:p-8 shadow-sm space-y-6">
-            {/* Card Header */}
-            <div className="border-b border-border-subtle pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-forest-deep/5 text-forest-deep mb-2">
-                  ⏱️ {currentMission.estimatedMinutes} mins • {session.environment}
+          {currentMission.status === 'completed' && (
+            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full self-start">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              Completed
+            </span>
+          )}
+        </div>
+
+        {/* Objective */}
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-1.5">
+            Objective
+          </h2>
+          <p className="text-sm sm:text-base text-forest-deep/95 leading-relaxed font-medium">
+            {currentMission.objective}
+          </p>
+        </div>
+
+        {/* Instructions */}
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-2">
+            Instructions
+          </h2>
+          <ol className="space-y-2 text-xs sm:text-sm text-forest-deep/90">
+            {currentMission.instructions.map((step, idx) => (
+              <li key={idx} className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-parchment-warm border border-border-subtle text-forest-deep font-semibold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  {idx + 1}
                 </span>
-                <h1 className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
-                  {currentMission.title}
-                </h1>
+                <span className="leading-relaxed">{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {/* Observation Criteria Pills */}
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-2">
+            What To Look / Listen For
+          </h2>
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3">
+            {currentMission.observationCriteria.map((item, idx) => (
+              <span
+                key={idx}
+                className="px-2.5 sm:px-3 py-1 rounded-xl text-[11px] sm:text-xs font-medium bg-parchment-warm border border-border-subtle text-forest-deep"
+              >
+                🔍 {item}
+              </span>
+            ))}
+          </div>
+
+          {/* Dynamic Scientific Reference Plate for this specific Mission */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-parchment-warm/85 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-xs">
+            <div className="flex items-start gap-3">
+              <div
+                onClick={() => setShowReferencePlate(true)}
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-border-subtle bg-white shrink-0 block shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
+                title="Click to view full reference plate"
+              >
+                <img
+                  src={activePlate.src}
+                  alt={activePlate.title}
+                  onError={(e) => {
+                    e.currentTarget.src = standardPlate.src;
+                  }}
+                  className="w-full h-full object-cover"
+                />
               </div>
-
-              {currentMission.status === 'completed' && (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full self-start">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  Completed
-                </span>
-              )}
-            </div>
-
-            {/* Objective */}
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-1.5">
-                Objective
-              </h2>
-              <p className="text-base text-forest-deep/95 leading-relaxed font-medium">
-                {currentMission.objective}
-              </p>
-            </div>
-
-            {/* Instructions */}
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-2">
-                Instructions
-              </h2>
-              <ol className="space-y-2 text-sm text-forest-deep/90">
-                {currentMission.instructions.map((step, idx) => (
-                  <li key={idx} className="flex items-start gap-2.5">
-                    <span className="w-5 h-5 rounded-full bg-parchment-warm border border-border-subtle text-forest-deep font-semibold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                      {idx + 1}
-                    </span>
-                    <span className="leading-relaxed">{step}</span>
-                  </li>
-                ))}
-              </ol>
-            </div>
-
-            {/* Observation Criteria Pills */}
-            <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-2">
-                What To Look / Listen For
-              </h2>
-              <div className="flex flex-wrap gap-2 mb-3">
-                {currentMission.observationCriteria.map((item, idx) => (
-                  <span
-                    key={idx}
-                    className="px-3 py-1 rounded-xl text-xs font-medium bg-parchment-warm border border-border-subtle text-forest-deep"
-                  >
-                    🔍 {item}
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green flex items-center gap-1">
+                    <BookOpen className="w-3 h-3 text-moss-green shrink-0" />
+                    <span>Scientific Guide • {activePlate.plateNumber}</span>
                   </span>
-                ))}
-              </div>
-
-              {/* Dynamic Scientific Reference Plate for this specific Mission */}
-              <div className="p-4 rounded-2xl bg-parchment-warm/85 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
-                <div className="flex items-start gap-3.5">
-                  <div
-                    onClick={() => setShowReferencePlate(true)}
-                    className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border border-border-subtle bg-white shrink-0 block shadow-2xs cursor-pointer hover:opacity-90 transition-opacity"
-                    title="Click to view full reference plate"
-                  >
-                    <img
-                      src={activePlate.src}
-                      alt={activePlate.title}
-                      onError={(e) => {
-                        e.currentTarget.src = standardPlate.src;
-                      }}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green flex items-center gap-1">
-                        <BookOpen className="w-3 h-3 text-moss-green" />
-                        Scientific Reference Guide • {activePlate.plateNumber}
-                      </span>
-                      {activePlate.isCustomAI ? (
-                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-700 text-white font-bold flex items-center gap-1 shadow-2xs">
-                          ✨ Real-Time Custom Plate
-                        </span>
-                      ) : (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep font-semibold">
-                          {activePlate.shortName}
-                        </span>
-                      )}
-                      {activePlate.isCustomAI ? (
-                        <button
-                          type="button"
-                          onClick={() => setReferencePlateId(standardPlate.id)}
-                          className="text-[10px] text-text-muted hover:text-forest-deep underline cursor-pointer"
-                        >
-                          (Revert to standard guide)
-                        </button>
-                      ) : customPlate ? (
-                        <button
-                          type="button"
-                          onClick={() => setReferencePlateId('custom-ai-plate')}
-                          className="text-[10px] text-emerald-800 hover:underline font-semibold cursor-pointer"
-                        >
-                          (✨ Switch to Custom AI)
-                        </button>
-                      ) : null}
-                    </div>
-                    <h3 className="text-xs sm:text-sm font-bold text-forest-deep">
-                      {activePlate.title}
-                    </h3>
-                    <p className="text-[11px] text-text-muted leading-relaxed">
-                      {activePlate.subtitle} — {activePlate.description}
-                    </p>
-
-                    {/* Real-Time Diagnostic Criteria details */}
-                    <div className="pt-1.5">
-                      <span className="text-[10px] uppercase font-bold text-moss-green tracking-wider block mb-1">
-                        {activePlate.isCustomAI ? '🎯 Real-Time Diagnostic Criteria:' : '🔍 Diagnostic Checklist:'}
-                      </span>
-                      <div className="flex flex-wrap gap-1.5 text-[10px] sm:text-[11px] text-forest-deep font-medium">
-                        {activePlate.details.map((d, idx) => (
-                          <span
-                            key={idx}
-                            title={d.description}
-                            className={`px-2.5 py-0.5 rounded-lg border text-forest-deep shadow-2xs flex items-center gap-1 font-semibold ${
-                              activePlate.isCustomAI
-                                ? 'bg-emerald-50/90 border-emerald-300/80 text-emerald-950'
-                                : 'bg-paper-white/90 border-border-subtle/70'
-                            }`}
-                          >
-                            <span className="text-emerald-700">✓</span>
-                            <span>{d.title}</span>
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                  {activePlate.isCustomAI ? (
+                    <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full bg-emerald-700 text-white font-bold shadow-2xs">
+                      Custom AI
+                    </span>
+                  ) : (
+                    <span className="text-[9px] sm:text-[10px] px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep font-semibold">
+                      {activePlate.shortName}
+                    </span>
+                  )}
                 </div>
+                <h3 className="text-xs sm:text-sm font-bold text-forest-deep truncate">
+                  {activePlate.title}
+                </h3>
+                <p className="text-[11px] text-text-muted leading-tight line-clamp-2 sm:line-clamp-none">
+                  {activePlate.subtitle}
+                </p>
 
-                <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
-                  <button
-                    type="button"
-                    disabled={isUpdatingPlateImage}
-                    onClick={handleUpdateCurrentPlateWithAI}
-                    className="px-3 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs whitespace-nowrap disabled:opacity-50"
-                    title="Instantly generate and update current image with AI"
-                  >
-                    <Wand2 className={`w-3.5 h-3.5 text-leaf-accent ${isUpdatingPlateImage ? 'animate-spin' : ''}`} />
-                    <span>{isUpdatingPlateImage ? 'Updating...' : '✨ Update Image'}</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomIllustrator(true)}
-                    className="px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs whitespace-nowrap"
-                    title="Customize and synthesize botanical plates with AI"
-                  >
-                    <Palette className="w-3.5 h-3.5 text-moss-green" />
-                    <span>🎨 Custom AI Plate</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowReferencePlate(true)}
-                    className="px-4 py-2 rounded-xl border border-border-subtle bg-parchment-warm text-forest-deep text-xs font-semibold hover:bg-paper-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
-                  >
-                    <Image className="w-3.5 h-3.5 text-moss-green" />
-                    <span>Study {activePlate.plateNumber}</span>
-                  </button>
+                {/* Real-Time Diagnostic Criteria details */}
+                <div className="pt-1.5">
+                  <div className="flex flex-wrap gap-1 text-[10px] sm:text-[11px] text-forest-deep font-medium">
+                    {activePlate.details.slice(0, 3).map((d, idx) => (
+                      <span
+                        key={idx}
+                        title={d.description}
+                        className={`px-2 py-0.5 rounded-lg border text-forest-deep shadow-2xs flex items-center gap-1 font-semibold ${
+                          activePlate.isCustomAI
+                            ? 'bg-emerald-50/90 border-emerald-300/80 text-emerald-950'
+                            : 'bg-paper-white/90 border-border-subtle/70'
+                        }`}
+                      >
+                        <span className="text-emerald-700">✓</span>
+                        <span className="truncate max-w-[140px] sm:max-w-none">{d.title}</span>
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border-subtle/60">
+              <button
+                type="button"
+                disabled={isUpdatingPlateImage}
+                onClick={handleUpdateCurrentPlateWithAI}
+                className="px-3 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50"
+                title="Instantly generate and update current image with AI"
+              >
+                <Wand2 className={`w-3.5 h-3.5 text-leaf-accent shrink-0 ${isUpdatingPlateImage ? 'animate-spin' : ''}`} />
+                <span>{isUpdatingPlateImage ? 'Updating...' : '✨ Update'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCustomIllustrator(true)}
+                className="px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-forest-deep hover:text-paper-white text-forest-deep text-[11px] sm:text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs"
+                title="Customize and synthesize botanical plates with AI"
+              >
+                <Palette className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                <span>Custom AI</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowReferencePlate(true)}
+                className="col-span-2 sm:col-span-1 px-3 sm:px-4 py-2 rounded-xl border border-border-subtle bg-parchment-warm text-forest-deep text-[11px] sm:text-xs font-semibold hover:bg-paper-white transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <Image className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                <span>Study {activePlate.plateNumber}</span>
+              </button>
+            </div>
+          </div>
+        </div>
 
             {/* Safety Guidance Callout */}
             <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 text-xs text-amber-950 flex items-start gap-3">

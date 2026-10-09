@@ -49,29 +49,36 @@ graph TD
 ```mermaid
 graph LR
     subgraph Frontend_Components["Frontend Components (apps/web)"]
-        Landing["LandingPage (Forest Atelier Hero)"]
+        Landing["LandingPage (Ethos Hero)"]
         Setup["AdventureSetupForm"]
         Active["ActiveAdventureScreen"]
-        ScreenDown["ScreenDownMode (Battery / Sensory)"]
-        Journal["JournalHistoryView"]
-        Export["JournalExportModal"]
+        ScreenDown["ScreenDownMode (Sensory Walk)"]
+        Journal["JournalView (Adventures & Notes)"]
+        Studio["FieldStudioView (Specimen Art & Folios)"]
+        PlateModal["BotanicalPlateModal (Inspection)"]
+        Philosophy["ObjectiveBasisModal (Philosophy & Science)"]
         Settings["AISettingsModal"]
     end
     
     subgraph State_Management["State & Data Layers"]
         ZustandSession["useAdventureSessionStore"]
-        DexieDB["db (FieldQuestDB)"]
+        DexieDB["db (FieldQuestDB / IndexedDB)"]
+        SketchGen["sketch-generator (Procedural Art & Plates)"]
         QueryHooks["useMissionsMutation / useAIStatus"]
     end
     
     Landing --> Setup
+    Landing --> Philosophy
     Setup --> QueryHooks
     QueryHooks --> ZustandSession
     ZustandSession --> Active
     Active --> ScreenDown
     Active --> DexieDB
     DexieDB --> Journal
-    Journal --> Export
+    Journal --> PlateModal
+    Journal -.->|Illustrate in Studio| Studio
+    Studio <--> DexieDB
+    Studio <--> SketchGen
 ```
 
 ---

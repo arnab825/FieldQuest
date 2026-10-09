@@ -227,6 +227,16 @@ export interface AIMissionProvider {
 - Filters curated mission templates by requested environment, interests, and duration (English).
 - Guaranteed sub-5ms response time with 100% schema validity.
 
+### 5.3 Procedural Botanical Sketch & Specimen Engine (`sketch-generator.ts`)
+- Client-side procedural illustration pipeline that synthesizes morphological specimen plates based on field notes and biological taxonomic rules.
+- **Historical Style Presets:**
+  - `vintage_plate`: 18th-century antique copperplate lithograph with sepia ink hatching and Linnaean taxonomic labels.
+  - `microscopic`: Botanical micro-anatomy slide with cross-sections, stoma, and cellular vascular bundles.
+  - `herbarium`: Pressed dried botanical specimen mounted with aged cotton rag paper and mounting tape.
+  - `sketch`: Naturalist graphite field study with proportional measurement axes.
+- **Curated Classical Herbarium Folios (`BOTANICAL_FIELD_PLATES`):** 7 high-resolution diagnostic plates (Venation, Bark & Lichens, Margins, Conifers, Ferns, Lichens, Seeds) embedded offline for zero-latency anatomical identification.
+- **Offline Base64 Transcoding:** Dynamic illustrations generated client-side are converted to Base64 Data URLs and persisted directly in `journalEntries.photoUrl` inside IndexedDB.
+
 ---
 
 ## 6. Offline Storage & IndexedDB (Dexie)
@@ -239,7 +249,17 @@ Stores:
 - `journalEntries`: Individual observations, reflections, photos, and mission notes linked to adventure IDs.
 - `preferences`: User interface preferences, selected language, sit-down accessibility mode.
 
----
+### 6.1 Data Portability & JSON Backup Specification
+- **Export Schema:**
+  ```typescript
+  interface FieldQuestExportPayload {
+    version: '1.0';
+    exportedAt: string; // ISO 8601
+    adventures: AdventureSessionRecord[];
+    entries: JournalEntry[];
+  }
+  ```
+- **Import / Restore Safeguards:** Transactional atomic write across `db.adventures` and `db.journalEntries` using Dexie `bulkPut`, preventing partial corruption on malformed backups.
 
 ## 7. Security, Privacy & Reliability
 

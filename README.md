@@ -6,48 +6,47 @@ FieldQuest is a polished, open-source, AI-powered, offline-first nature explorat
 
 ---
 
-## Objective Basis & Purpose (For Judges & Evaluators)
+## Our Philosophy & Science
 
 FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot nature observation tool** engineered with explicit scientific and educational rationale:
 
 1. **Cognitive Science & Attention Restoration Theory (ART):** Rooted in Kaplan & Kaplan's cognitive psychology, prolonged screen interaction depletes direct executive attention. Involuntary natural sensory immersion ("soft fascination") restores focus. FieldQuest actively uses a **Screen-Down Mode** so explorers keep phones in pockets rather than staring at glass while walking.
-2. **Botanical Functional Morphology:** Observational quests train participants in fundamental ecological principles: leaf venation architecture, bark moisture gradients, and lichen as symbiotic bioindicators of urban air quality.
-3. **Open-Weight AI Sovereignty:** Prompts are processed locally via Ollama with open-weight models (`qwen3:4b` or Google Gemma) or an instant deterministic fallback engine. Zero telemetry, zero accounts, and zero remote cloud surveillance.
-4. **Offline-First Resilience:** In nature trails with zero cellular connectivity, FieldQuest functions completely offline via PWA Service Workers and persists all personal field notes, observations, and photos in IndexedDB (Dexie).
+2. **Botanical Functional Morphology & Bioindicators:** Observational quests train participants in fundamental ecological principles: leaf venation architecture, bark moisture gradients, and lichen as symbiotic bioindicators of urban air quality.
+3. **Acoustic Ecology & Soundscape Stratification:** Distinguishing between geophony (wind, water), biophony (birds, insects), and anthrophony (human sounds) to foster auditory mindfulness.
+4. **Open-Weight AI Sovereignty:** Prompts are processed locally via Ollama with open-weight models (`qwen2.5:3b` / `qwen3:4b` or Google Gemma) or an instant deterministic fallback engine. Zero telemetry, zero accounts, and zero remote cloud surveillance.
+5. **Offline-First Resilience:** In nature trails with zero cellular connectivity, FieldQuest functions completely offline via PWA Service Workers and persists all personal field notes, observations, and photos in IndexedDB (Dexie).
 
 ---
 
 ## Key Features
 
 - 🍃 **Context-Aware Nature Missions:** Generates tailored 15, 30, or 60-minute observational quests based on your environment, interests, difficulty, and time.
-- 🧠 **Open-Weight AI Integration:** Powered by local open-weight models via **Ollama** (defaulting to `qwen3:4b` or Gemma), keeping prompts and insights private and sovereign.
+- 🎨 **Creative Field Studio (`/studio`):** An interactive botanical illustration workshop to sketch wild specimens, experiment with 4 historical scientific art styles (*Vintage Naturalist Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*), randomize seeds, and download high-resolution diagnostic plates.
+- 🌿 **Classical Herbarium Folios & Inspection Modal:** 7 curated anatomical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with morphological diagnostic keys, inspectable directly inside your journal without losing context.
+- 📖 **Focused Local Nature Journal (`/journal`):** A distraction-free explorer's log with dedicated **Adventures** history and **Field Notes & Observations** logs. Includes full JSON export and restore backup functionality.
+- 🧠 **Open-Weight AI Integration:** Powered by local open-weight models via **Ollama** (defaulting to `qwen2.5:3b` or Gemma), keeping prompts and insights private and sovereign.
 - ⚡ **Zero-Config Demo Mode:** High-fidelity deterministic mission generator for immediate exploration without needing a local AI GPU or daemon.
 - 📴 **True Offline-First Architecture:** Uses IndexedDB (Dexie) for durable local storage of all adventures, field notes, and reflections. The PWA shell caches assets for seamless offline operation.
 - 📵 **Screen-Down Mode:** Put your phone in your pocket and explore with your senses; screen dims to save battery and reduce distraction.
-- 📖 **Local Nature Journal:** Capture observational notes, photographs, and mindful reflections. Search, edit, filter, and export full journal archives as JSON.
-- 🎨 **Forest Atelier Visual Aesthetic:** Designed with a botanical, editorial aesthetic inspired by vintage field notebooks, natural wood tones, and modern editorial typography.
+- 🏛️ **Our Philosophy & Science Modal:** Comprehensive interactive educational chapters explaining the cognitive science, morphology, acoustic ecology, and privacy design behind FieldQuest.
 - 🔒 **Absolute Privacy:** No mandatory accounts, no cloud sync, no tracking, and no invasive background GPS logging.
 
 ---
 
-## Screenshots
-
-> *Placeholder: Screenshots of the Forest Atelier landing page, adventure configuration, active mission view, and offline nature journal.*
+## Core User Interface Layout
 
 ```
-+-------------------------------------------------------------+
-|  [🌿 FieldQuest]             [Journal] [Settings] [New Adventure]|
-|                                                             |
-|         Your neighbourhood is more interesting than your feed|
-|                                                             |
-|   [ 15 min ]  [ City Park ]  [ Plants & Birds ]  [ English ]|
-|                                                             |
-|   +-----------------------------------------------------+   |
-|   | MISSION 1: Bilateral Leaf Symmetry Audit             |   |
-|   | Compare leaf venation between two distinct plants.  |   |
-|   | [ Complete Mission ]    [ Put Screen Down 🌙 ]      |   |
-|   +-----------------------------------------------------+   |
-+-------------------------------------------------------------+
++---------------------------------------------------------------------------------+
+|  [🌿 FieldQuest PWA]       [Explore]  [Active Quest]  [Field Journal]  [Field Studio]  |
++---------------------------------------------------------------------------------+
+|                                                                                 |
+|  [EXPLORE / SETUP]        [FIELD JOURNAL]                 [FIELD STUDIO]        |
+|  - 15/30/60m durations    - Adventures History            - 4 Art Style Presets |
+|  - Habitat selection      - Field Notes & Observations    - Subject Generators  |
+|  - Mobility accessible    - Reference Inspection Modal    - Live Studio Canvas  |
+|  - Sensor-driven quests   - JSON Backup & Restore         - Download High-Res   |
+|                                                                                 |
++---------------------------------------------------------------------------------+
 ```
 
 ---
@@ -55,13 +54,16 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 ## Architecture Overview
 
 ```
-Browser PWA (React 19 + Tailwind v4 + Dexie IndexedDB)
+Browser PWA (React 19 + Tailwind v4 + Dexie IndexedDB + Web Worker)
+   │
+   ├─► Local Nature Journal (IndexedDB: Adventures, Field Notes, Observation Photos)
+   ├─► Field Studio (Client-side Procedural Specimen Synthesis & Canvas Renderer)
    │
    ▼ (REST API: /api/v1/*)
 Express 5 API Service (Node.js LTS)
    │
    ├─► DemoMissionProvider (Deterministic curated engine)
-   └─► OllamaMissionProvider ──► Ollama (:11434) ──► qwen3:4b
+   └─► OllamaMissionProvider ──► Ollama (:11434) ──► qwen2.5:3b / qwen3:4b
 ```
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system diagrams and data flow specifications.
@@ -167,8 +169,12 @@ npm run podman:down
 3. Once you launch the stack (`npm run podman:up`), all 3 services (`fieldquest-web`, `fieldquest-api`, and `fieldquest-ai`) will be visible in your Podman Desktop dashboard.
 4. You can inspect live CPU/RAM resource usage, click into real-time container logs, and pause or stop containers with one click.
 
-### Application Endpoints
-- 🌿 **Web PWA:** [http://localhost:5173](http://localhost:5173/)
+### Application Routes & Endpoints
+- 🌿 **Home & Ethos:** [http://localhost:5173/](http://localhost:5173/)
+- 🧭 **Explore / Setup:** [http://localhost:5173/setup](http://localhost:5173/setup)
+- ⚡ **Active Quest Screen:** [http://localhost:5173/adventure](http://localhost:5173/adventure)
+- 📖 **Field Journal:** [http://localhost:5173/journal](http://localhost:5173/journal)
+- 🎨 **Field Studio:** [http://localhost:5173/studio](http://localhost:5173/studio)
 - ⚙️ **API Status:** [http://localhost:4000](http://localhost:4000/)
 - 🧠 **Ollama AI Engine:** [http://localhost:11434](http://localhost:11434/)
 - 🩺 **API Health Check:** [http://localhost:4000/api/v1/health](http://localhost:4000/api/v1/health)
@@ -181,7 +187,7 @@ To use live open-weight model generation:
 
 1. **Install and start Ollama:**
    ```bash
-   ollama serve
+   ollama server
    ```
 
 2. **Pull the default model (`qwen3:4b`):**

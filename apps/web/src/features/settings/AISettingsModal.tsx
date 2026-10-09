@@ -163,7 +163,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
-      <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto scrollbar-none">
         {/* Close Button */}
         <button
           onClick={onClose}
@@ -174,7 +174,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         </button>
 
         {/* Modal Title */}
-        <div className="mb-6">
+        <div className="mb-6 pr-8 sm:pr-0">
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep text-[11px] font-semibold">
               <Cpu className="w-3.5 h-3.5 text-moss-green" />

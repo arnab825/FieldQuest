@@ -1,9 +1,13 @@
 import React from 'react';
 import { Leaf, ShieldCheck, Database, Heart } from 'lucide-react';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenObjectiveBasis?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenObjectiveBasis }) => {
   return (
-    <footer className="mt-auto border-t border-border-subtle bg-paper-white/70 py-10 text-xs text-text-muted">
+    <footer className="mt-auto border-t border-border-subtle bg-paper-white/70 pt-8 pb-24 md:py-10 text-xs text-text-muted">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand Info */}
@@ -55,7 +59,21 @@ export const Footer: React.FC = () => {
         </div>
 
         <div className="border-t border-border-subtle pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
-          <p>© 2026 FieldQuest Contributors. Built for real-world exploration.</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p>© 2026 FieldQuest Contributors. Built for real-world exploration.</p>
+            {onOpenObjectiveBasis && (
+              <>
+                <span className="text-border-subtle">•</span>
+                <button
+                  type="button"
+                  onClick={onOpenObjectiveBasis}
+                  className="text-forest-deep hover:underline font-semibold cursor-pointer"
+                >
+                  Our Philosophy & Science
+                </button>
+              </>
+            )}
+          </div>
           <p className="flex items-center gap-1">
             Made with <Heart className="w-3 h-3 text-emerald-700 fill-emerald-700" /> for the outdoors.
           </p>

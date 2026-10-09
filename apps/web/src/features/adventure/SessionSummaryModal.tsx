@@ -43,11 +43,11 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-paper-white rounded-3xl border border-border-subtle p-6 sm:p-8 max-w-lg w-full shadow-2xl relative">
+      <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[92vh] overflow-y-auto scrollbar-none">
         {/* Header Celebration */}
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-forest-deep text-leaf-accent flex items-center justify-center mx-auto mb-4 shadow-md">
-            <Award className="w-8 h-8" />
+        <div className="text-center mb-5 sm:mb-6">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-forest-deep text-leaf-accent flex items-center justify-center mx-auto mb-3 sm:mb-4 shadow-md">
+            <Award className="w-7 h-7 sm:w-8 sm:h-8" />
           </div>
           <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
             Adventure Complete!
@@ -58,13 +58,13 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
-          <div className="p-3.5 rounded-2xl bg-parchment-warm/60 border border-border-subtle text-center">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 mb-5 sm:mb-6">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-parchment-warm/60 border border-border-subtle text-center">
             <div className="flex items-center justify-center gap-1.5 text-moss-green text-xs font-semibold mb-1">
               <Clock className="w-4 h-4" />
               <span>Time Outside</span>
             </div>
-            <div className="font-editorial text-2xl font-bold text-forest-deep">
+            <div className="font-editorial text-xl sm:text-2xl font-bold text-forest-deep">
               {session.totalMinutesSpent} <span className="text-sm font-sans font-normal">min</span>
             </div>
             <p className="text-[10px] text-text-muted mt-0.5">
@@ -72,12 +72,12 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             </p>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-parchment-warm/60 border border-border-subtle text-center">
+          <div className="p-3 sm:p-3.5 rounded-2xl bg-parchment-warm/60 border border-border-subtle text-center">
             <div className="flex items-center justify-center gap-1.5 text-moss-green text-xs font-semibold mb-1">
               <CheckCircle2 className="w-4 h-4" />
               <span>Missions</span>
             </div>
-            <div className="font-editorial text-2xl font-bold text-forest-deep">
+            <div className="font-editorial text-xl sm:text-2xl font-bold text-forest-deep">
               {completedMissions.length} / {session.missions.length}
             </div>
             <p className="text-[10px] text-text-muted mt-0.5">
@@ -87,7 +87,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         </div>
 
         {/* Overall Reflection Prompt */}
-        <div className="mb-6 space-y-1.5">
+        <div className="mb-5 sm:mb-6 space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-forest-deep">
               Capture an overall thought or sensory discovery:
@@ -100,7 +100,7 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
             value={reflection}
             onChange={e => setReflection(e.target.value)}
             placeholder="What was your favorite observation today? Notice any unexpected insects, lichens, foliage colors, or quiet sounds?"
-            className="w-full min-h-[100px] p-3.5 rounded-xl border border-border-subtle bg-parchment-warm/40 focus:bg-paper-white text-xs sm:text-sm text-forest-deep leading-relaxed focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10 resize-y transition-all placeholder:text-text-muted/70"
+            className="w-full min-h-[90px] sm:min-h-[100px] p-3 sm:p-3.5 rounded-xl border border-border-subtle bg-parchment-warm/40 focus:bg-paper-white text-xs sm:text-sm text-forest-deep leading-relaxed focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10 resize-y transition-all placeholder:text-text-muted/70"
           />
         </div>
 
@@ -109,18 +109,18 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
           {!isSaved ? (
             <button
               onClick={handleSaveToJournal}
-              className="w-full py-3.5 rounded-xl bg-forest-deep text-paper-white font-medium text-sm flex items-center justify-center gap-2 hover:bg-forest-dark transition-colors cursor-pointer"
+              className="w-full py-3 sm:py-3.5 rounded-xl bg-forest-deep text-paper-white font-medium text-xs sm:text-sm flex items-center justify-center gap-2 hover:bg-forest-dark transition-colors cursor-pointer"
             >
               <BookOpen className="w-4 h-4 text-leaf-accent" />
               <span>Save Reflection to Journal</span>
             </button>
           ) : (
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs text-center font-medium">
+            <div className="p-2.5 sm:p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs text-center font-medium">
               ✓ Saved to your offline nature journal!
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-2 pt-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
             <button
               onClick={handleGoToJournal}
               className="py-2.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-forest-deep font-medium text-xs flex items-center justify-center gap-1.5 cursor-pointer"

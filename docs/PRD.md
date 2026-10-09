@@ -94,15 +94,29 @@ FieldQuest stands in direct opposition to endless scrolling, digital fatigue, an
 - **Observation Capture:** Note field observations, capture or select a local photo, and rate findings.
 - **Adventure Summary:** Displays completion percentage, total outdoor minutes, and encourages reflection.
 
-### 5.5 Local Nature Journal & History
+### 5.5 Local Nature Journal & History (`/journal`)
 - Built on Dexie (IndexedDB).
-- Stores all adventures, individual missions, observations, photos (Base64 data URLs), and timestamps.
-- Features: View history, search/filter notes, edit observations, delete entries, and full JSON data export.
-- Completely offline operational capability.
+- Clean two-tab architecture: **Adventures History** and **Field Notes & Observations**.
+- Observation notes format with structured naturalist formatting (bracket headers, markdown subheadings, anatomical bullet points).
+- Interactive **Botanical Reference Plate Inspection Modal** opening directly over notes without redirecting.
+- Complete data portability: JSON export and file upload backup restoration with transactional safety.
+- Operational completely offline with zero network connectivity required.
 
-### 5.6 Settings & Diagnostics
+### 5.6 Creative Field Studio (`/studio`)
+- Dedicated botanical art workshop and morphological study suite.
+- **Specimen Art Director:** Preset biological organisms (*Bilateral Oak Venation*, *Sycamore Bark Lichen*, *Pine Cone Fibonacci Spiral*, etc.) and custom subject inputs.
+- **Historical Art Styles:** 4 selectable presets (*Vintage 18th-century Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*).
+- **Procedural Studio Artboard:** Live rendering canvas, random seed generator, high-resolution PNG download, and direct "Save to Journal" integration.
+- **Herbarium Archive & Folio Library:** 7 curated classical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with anatomical diagnostic keys and "Use as Studio Inspiration" controls.
+- **Archived Specimen Gallery:** Instant browsing of personal illustrations stored in IndexedDB.
+
+### 5.7 Philosophy & Science Foundation Modal
+- Accessible directly from footer and landing page.
+- 5 comprehensive educational chapters: Attention Restoration Theory (ART), Botanical Functional Morphology & Bioindicators, Acoustic Ecology & Soundscape Stratification, Urban Ecology & Micro-Habitats, and Sovereign Privacy & Offline Resilience.
+
+### 5.8 Settings & Diagnostics
 - AI Provider status check (`/api/v1/ai/status`).
-- Display current model (`qwen3:4b`), inference latency indicator, and demo mode switch.
+- Display current model (`qwen2.5:3b` / `qwen3:4b`), inference latency indicator, and demo mode switch.
 - Storage stats (number of adventures, storage used).
 - Complete data wipe option for privacy.
 

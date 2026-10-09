@@ -165,7 +165,7 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="overflow-y-auto py-4 space-y-5 pr-1 text-xs sm:text-sm">
+        <div className="overflow-y-auto py-4 space-y-5 pr-1 text-xs sm:text-sm scrollbar-none">
           {/* Mission Context Pill */}
           <div className="p-3 rounded-2xl bg-parchment-warm/70 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="space-y-0.5">
@@ -424,7 +424,7 @@ export const CustomIllustratorModal: React.FC<CustomIllustratorModalProps> = ({
                     Click to instantly select plate
                   </span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
+                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-1.5">
                   {BOTANICAL_FIELD_PLATES.map((p) => {
                     const isSelected = result.url === p.src;
                     return (

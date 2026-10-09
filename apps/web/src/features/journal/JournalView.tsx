@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   BookOpen,
   Calendar,
@@ -16,12 +16,13 @@ import {
   Sparkles,
   ExternalLink,
   Layers,
-  ArrowLeft,
   Check,
   Play,
   RotateCcw,
   Edit3,
   Save,
+  X,
+  Palette,
 } from 'lucide-react';
 import {
   getAllAdventures,
@@ -38,28 +39,38 @@ import {
 } from '../../lib/db.js';
 import { AdventureSessionRecord, NatureMission } from '../../types/index.js';
 import { NaturalistNoteView } from '../../components/NaturalistNoteView.js';
+import { FilterBar } from '../../components/common/FilterBar.js';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 import {
   generateBotanicalSketch,
   getMatchingBotanicalPlate,
   BOTANICAL_FIELD_PLATES,
+  BotanicalPlateInfo,
 } from '../../lib/sketch-generator.js';
 
 export const JournalView: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const restoreSession = useAdventureSessionStore(s => s.restoreSession);
   const startSession = useAdventureSessionStore(s => s.startSession);
 
   const [adventures, setAdventures] = useState<AdventureSessionRecord[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<'adventures' | 'entries' | 'plates'>('adventures');
+  const [activeTab, setActiveTab] = useState<'adventures' | 'entries'>(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash.replace('#', '') : '';
+    if (hash === 'entries' || hash === 'adventures') return hash;
+    const saved = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('fq_journal_tab') : null;
+    if (saved === 'entries' || saved === 'adventures') return saved as any;
+    return 'adventures';
+  });
   const [expandedAdventureId, setExpandedAdventureId] = useState<string | null>(null);
   const [editingMissionKey, setEditingMissionKey] = useState<string | null>(null);
   const [editingNotesText, setEditingNotesText] = useState<string>('');
   const [confirmClear, setConfirmClear] = useState(false);
-  const [selectedPlateId, setSelectedPlateId] = useState<string | null>(null);
+  const [selectedFilterPlateId, setSelectedFilterPlateId] = useState<string | null>(null);
   const [platePickerEntryId, setPlatePickerEntryId] = useState<string | null>(null);
   const [generatingSketchId, setGeneratingSketchId] = useState<string | null>(null);
+  const [inspectingPlate, setInspectingPlate] = useState<BotanicalPlateInfo | null>(null);
 
   const loadData = async () => {
     const advList = await getAllAdventures();
@@ -69,8 +80,19 @@ export const JournalView: React.FC = () => {
   };
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
     loadData();
   }, []);
+
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    if (hash === 'entries' || hash === 'adventures') {
+      setActiveTab(hash as any);
+      sessionStorage.setItem('fq_journal_tab', hash);
+    } else if (hash === 'plates') {
+      navigate('/studio');
+    }
+  }, [location.hash, navigate]);
 
   const totalOutdoorMinutes = adventures.reduce(
     (sum, a) => sum + (a.totalMinutesSpent || 0),
@@ -81,6 +103,7 @@ export const JournalView: React.FC = () => {
     (sum, a) => sum + a.missions.filter(m => m.status === 'completed').length,
     0
   );
+
 
   const handleExport = async () => {
     const jsonStr = await exportAllDataAsJSON();
@@ -227,18 +250,6 @@ export const JournalView: React.FC = () => {
     await loadData();
   };
 
-  const handleViewInBotanicalPlates = (entry: JournalEntry) => {
-    const plateByUrl = BOTANICAL_FIELD_PLATES.find(p => p.src === entry.photoUrl);
-    const targetPlate = plateByUrl || getMatchingBotanicalPlate(entry.notes, entry.missionTitle, entry.environment);
-    setActiveTab('plates');
-    setSelectedPlateId(targetPlate.id);
-    setTimeout(() => {
-      const el = document.getElementById(targetPlate.id);
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 120);
-  };
 
   const handleRemovePhoto = async (id: string) => {
     await updateJournalEntryPhoto(id, undefined);
@@ -259,26 +270,26 @@ export const JournalView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-deep/10 text-forest-deep text-xs font-semibold mb-2">
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6 sm:mb-8 pb-6 border-b border-border-subtle/70">
+        <div className="space-y-1.5 max-w-2xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest-deep/10 text-forest-deep text-xs font-semibold">
             <BookOpen className="w-3.5 h-3.5 text-moss-green" />
             <span>Local Nature Journal</span>
           </div>
-          <h1 className="font-editorial text-3xl sm:text-4xl font-bold text-forest-deep">
+          <h1 className="font-editorial text-2xl sm:text-3xl md:text-4xl font-bold text-forest-deep tracking-tight">
             Exploration History & Field Notes
           </h1>
-          <p className="text-xs sm:text-sm text-text-muted mt-1">
+          <p className="text-xs sm:text-sm text-text-muted leading-relaxed">
             All adventures, observations, and photos are stored securely inside your browser's IndexedDB.
           </p>
         </div>
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-2 transition-colors cursor-pointer shadow-xs">
-            <Upload className="w-4 h-4 text-moss-green" />
+        {/* Action Controls - cleanly aligned in a single row without awkward staggered wraps */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 shrink-0 self-start lg:self-end">
+          <label className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap">
+            <Upload className="w-3.5 h-3.5 text-moss-green shrink-0" />
             <span>Restore Backup</span>
             <input
               type="file"
@@ -290,110 +301,86 @@ export const JournalView: React.FC = () => {
 
           <button
             onClick={handleExport}
-            className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+            className="px-3.5 py-2.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
             title="Export all data to a local JSON file"
           >
-            <Download className="w-4 h-4 text-moss-green" />
+            <Download className="w-3.5 h-3.5 text-moss-green shrink-0" />
             <span>Export JSON</span>
           </button>
 
           <Link
             to="/setup"
-            className="px-3.5 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
+            className="px-4 py-2.5 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer whitespace-nowrap"
           >
-            <Compass className="w-4 h-4 text-leaf-accent" />
+            <Compass className="w-3.5 h-3.5 text-leaf-accent shrink-0" />
             <span>New Adventure</span>
           </Link>
         </div>
       </div>
 
       {/* Overview Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="bg-paper-white rounded-2xl border border-border-subtle p-5 shadow-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-5 shadow-xs">
           <div className="flex items-center gap-2 text-moss-green text-xs font-semibold mb-1">
             <Compass className="w-4 h-4" />
             <span>Total Adventures</span>
           </div>
-          <div className="font-editorial text-3xl font-bold text-forest-deep">
+          <div className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
             {adventures.length}
           </div>
-          <p className="text-[11px] text-text-muted mt-1">
+          <p className="text-[11px] text-text-muted mt-0.5">
             Stored locally in IndexedDB
           </p>
         </div>
 
-        <div className="bg-paper-white rounded-2xl border border-border-subtle p-5 shadow-xs">
+        <div className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-5 shadow-xs">
           <div className="flex items-center gap-2 text-moss-green text-xs font-semibold mb-1">
             <Clock className="w-4 h-4" />
             <span>Outdoor Observation</span>
           </div>
-          <div className="font-editorial text-3xl font-bold text-forest-deep">
+          <div className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
             {totalOutdoorMinutes} <span className="text-sm font-sans font-normal">mins</span>
           </div>
-          <p className="text-[11px] text-text-muted mt-1">
+          <p className="text-[11px] text-text-muted mt-0.5">
             Self-reported outdoor tracking
           </p>
         </div>
 
-        <div className="bg-paper-white rounded-2xl border border-border-subtle p-5 shadow-xs">
+        <div className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-5 shadow-xs">
           <div className="flex items-center gap-2 text-moss-green text-xs font-semibold mb-1">
             <CheckCircle2 className="w-4 h-4" />
             <span>Completed Quests</span>
           </div>
-          <div className="font-editorial text-3xl font-bold text-forest-deep">
+          <div className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
             {totalCompletedMissions}
           </div>
-          <p className="text-[11px] text-text-muted mt-1">
+          <p className="text-[11px] text-text-muted mt-0.5">
             Individual observational missions
           </p>
         </div>
       </div>
 
-      {/* Tab Switcher */}
-      <div className="flex border-b border-border-subtle mb-6">
-        <button
-          onClick={() => setActiveTab('adventures')}
-          className={`py-3 px-4 font-editorial text-sm font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'adventures'
-              ? 'border-forest-deep text-forest-deep'
-              : 'border-transparent text-text-muted hover:text-forest-deep'
-          }`}
-        >
-          Adventures ({adventures.length})
-        </button>
-
-        <button
-          onClick={() => setActiveTab('entries')}
-          className={`py-3 px-4 font-editorial text-sm font-bold border-b-2 transition-colors cursor-pointer ${
-            activeTab === 'entries'
-              ? 'border-forest-deep text-forest-deep'
-              : 'border-transparent text-text-muted hover:text-forest-deep'
-          }`}
-        >
-          Field Notes & Observations ({entries.length})
-        </button>
-
-        <button
-          onClick={() => {
-            setActiveTab('plates');
-            setSelectedPlateId(null);
-          }}
-          className={`py-3 px-4 font-editorial text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
-            activeTab === 'plates'
-              ? 'border-forest-deep text-forest-deep'
-              : 'border-transparent text-text-muted hover:text-forest-deep'
-          }`}
-        >
-          <Layers className="w-4 h-4 text-moss-green" />
-          <span>Botanical Field Plates ({BOTANICAL_FIELD_PLATES.length})</span>
-        </button>
-      </div>
+      {/* Reusable Tab Switcher with mobile scrollbar-free swipe and overflow indicators */}
+      <FilterBar<'adventures' | 'entries'>
+        items={[
+          { id: 'adventures', label: 'Adventures', count: adventures.length },
+          { id: 'entries', label: 'Field Notes & Observations', count: entries.length },
+        ]}
+        selectedId={activeTab}
+        onSelect={(id) => {
+          setActiveTab(id);
+          sessionStorage.setItem('fq_journal_tab', id);
+          window.location.hash = id;
+        }}
+        variant="tabs"
+        className="mb-6"
+      />
 
       {/* Content for Adventures */}
       {activeTab === 'adventures' && (
         <div className="space-y-4">
           {adventures.length === 0 ? (
-            <div className="bg-paper-white rounded-2xl border border-border-subtle p-8 text-center">
+            <div className="bg-paper-white rounded-2xl border border-border-subtle p-6 sm:p-8 text-center">
               <Compass className="w-10 h-10 text-moss-green mx-auto mb-3" />
               <h3 className="font-editorial text-lg font-bold text-forest-deep mb-1">
                 No Adventures Recorded Yet
@@ -422,12 +409,12 @@ export const JournalView: React.FC = () => {
               return (
                 <div
                   key={adv.id}
-                  className="bg-paper-white rounded-2xl border border-border-subtle p-5 shadow-xs transition-all"
+                  className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-5 shadow-xs transition-all"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-editorial text-lg font-bold text-forest-deep">
+                        <span className="font-editorial text-base sm:text-lg font-bold text-forest-deep">
                           {adv.environment.toUpperCase()} • {adv.durationMinutes}m
                         </span>
                         <span
@@ -444,7 +431,7 @@ export const JournalView: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs text-text-muted">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3.5 h-3.5" /> {dateStr}
                         </span>
@@ -457,16 +444,16 @@ export const JournalView: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 self-end sm:self-auto">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-border-subtle/50">
                       {adv.status !== 'completed' && (
                         <button
                           type="button"
                           onClick={() => handleResumeAdventure(adv)}
-                          className="px-3.5 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
                           title="Resume this adventure and continue incomplete missions"
                         >
                           <Play className="w-3.5 h-3.5 text-leaf-accent fill-leaf-accent" />
-                          <span>Resume Adventure</span>
+                          <span>Resume</span>
                         </button>
                       )}
 
@@ -492,7 +479,7 @@ export const JournalView: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => handleDeleteAdventure(adv.id)}
-                        className="p-2 rounded-lg text-text-muted hover:text-red-700 transition-colors cursor-pointer"
+                        className="p-2 rounded-lg text-text-muted hover:text-red-700 transition-colors cursor-pointer ml-auto sm:ml-0"
                         title="Delete adventure"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -627,20 +614,88 @@ export const JournalView: React.FC = () => {
       )}
 
       {/* Content for Field Notes & Observations */}
-      {activeTab === 'entries' && (
-        <div className="space-y-4">
-          {entries.length === 0 ? (
-            <div className="bg-paper-white rounded-2xl border border-border-subtle p-8 text-center">
-              <BookOpen className="w-10 h-10 text-moss-green mx-auto mb-3" />
-              <h3 className="font-editorial text-lg font-bold text-forest-deep mb-1">
-                No Observations Recorded
-              </h3>
-              <p className="text-xs text-text-muted">
-                Capture notes and photographs during your adventures to see them logged here.
-              </p>
-            </div>
-          ) : (
-            entries.map(ent => {
+      {activeTab === 'entries' && (() => {
+        const getEntryPlate = (e: JournalEntry) => {
+          const plateByUrl = BOTANICAL_FIELD_PLATES.find(p => p.src === e.photoUrl);
+          return plateByUrl || getMatchingBotanicalPlate(e.notes, e.missionTitle, e.environment);
+        };
+
+        // Collect referenced plates from current observations
+        const referencedPlates = BOTANICAL_FIELD_PLATES.filter(p =>
+          entries.some(e => getEntryPlate(e).id === p.id)
+        );
+
+        const filteredEntries = selectedFilterPlateId
+          ? entries.filter(e => getEntryPlate(e).id === selectedFilterPlateId)
+          : entries;
+
+        // Collect recently generated field sketches across all journal entries (excluding default stock plates)
+        const availableRecentSketches = Array.from(
+          new Map(
+            entries
+              .filter(e => e.photoUrl && !BOTANICAL_FIELD_PLATES.some(p => p.src === e.photoUrl))
+              .map(e => [e.photoUrl, {
+                id: e.id,
+                title: e.missionTitle || 'Field Specimen Sketch',
+                src: e.photoUrl!,
+                timestamp: e.timestamp,
+              }])
+          ).values()
+        );
+
+        return (
+          <div className="space-y-4">
+            {/* Filter Observations by Botanical Reference Plate */}
+            {entries.length > 0 && referencedPlates.length > 0 && (
+              <div className="bg-paper-white/80 backdrop-blur-xs p-2 rounded-2xl border border-border-subtle/80 shadow-2xs mb-2">
+                <FilterBar
+                  label={
+                    <span className="text-[11px] font-bold text-forest-deep flex items-center gap-1.5 shrink-0 select-none">
+                      <Layers className="w-3.5 h-3.5 text-moss-green" />
+                      <span>Reference Plate:</span>
+                    </span>
+                  }
+                  allOption={{
+                    id: 'all',
+                    label: 'All Observations',
+                    count: entries.length,
+                  }}
+                  items={referencedPlates.map(plate => ({
+                    id: plate.id,
+                    label: `${plate.plateNumber}: ${plate.shortName}`,
+                    count: entries.filter(e => getEntryPlate(e).id === plate.id).length,
+                  }))}
+                  selectedId={selectedFilterPlateId || 'all'}
+                  onSelect={(id) => setSelectedFilterPlateId(id === 'all' ? null : id)}
+                  variant="pills"
+                  size="sm"
+                />
+              </div>
+            )}
+
+            {filteredEntries.length === 0 ? (
+              <div className="bg-paper-white rounded-2xl border border-border-subtle p-8 text-center">
+                <BookOpen className="w-10 h-10 text-moss-green mx-auto mb-3" />
+                <h3 className="font-editorial text-lg font-bold text-forest-deep mb-1">
+                  {entries.length === 0 ? 'No Observations Recorded' : 'No Matching Observations'}
+                </h3>
+                <p className="text-xs text-text-muted">
+                  {entries.length === 0
+                    ? 'Capture notes and photographs during your adventures to see them logged here.'
+                    : `No observation notes found referencing this botanical plate.`}
+                </p>
+                {entries.length > 0 && selectedFilterPlateId && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFilterPlateId(null)}
+                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold cursor-pointer"
+                  >
+                    Clear Filter
+                  </button>
+                )}
+              </div>
+            ) : (
+              filteredEntries.map(ent => {
               const matchedPlate = getMatchingBotanicalPlate(ent.notes, ent.missionTitle, ent.environment);
               const plateByUrl = BOTANICAL_FIELD_PLATES.find(p => p.src === ent.photoUrl);
               const activeRefPlate = plateByUrl || matchedPlate;
@@ -708,12 +763,12 @@ export const JournalView: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => handleViewInBotanicalPlates(ent)}
+                              onClick={() => setInspectingPlate(activeRefPlate)}
                               className="text-forest-deep hover:underline font-semibold flex items-center gap-1 cursor-pointer bg-forest-deep/5 hover:bg-forest-deep/10 px-2 py-0.5 rounded-md"
-                              title="Jump directly to Botanical Field Plates"
+                              title="Inspect botanical reference plate"
                             >
                               <BookOpen className="w-3 h-3 text-moss-green" />
-                              <span>View in Plates</span>
+                              <span>View Reference Plate</span>
                             </button>
                             <span>•</span>
                             <button
@@ -760,123 +815,250 @@ export const JournalView: React.FC = () => {
                         </span>
                       </button>
 
+                      {/* Preferred AI Match Quick Attach */}
+                      <button
+                        type="button"
+                        onClick={() => handleAttachPlate(ent.id, matchedPlate.src)}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-forest-deep/10 hover:bg-forest-deep/15 text-forest-deep border border-forest-deep/20 text-xs font-bold transition-all cursor-pointer shadow-2xs"
+                        title={`Quickly attach AI suggested plate: ${matchedPlate.plateNumber} (${matchedPlate.shortName})`}
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-moss-green" />
+                        <span>✨ Attach AI Suggestion ({matchedPlate.plateNumber})</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setPlatePickerEntryId(isPickingPlate ? null : ent.id)}
                         className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep border border-border-subtle text-xs font-semibold transition-all cursor-pointer"
                       >
                         <Image className="w-3.5 h-3.5 text-moss-green" />
-                        <span>🌿 Attach Reference Plate</span>
+                        <span>{isPickingPlate ? 'Close Plate Selector' : '🌿 Attach Reference Plate'}</span>
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => handleViewInBotanicalPlates(ent)}
+                        onClick={() => setInspectingPlate(matchedPlate)}
                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-text-muted hover:text-forest-deep hover:bg-parchment-warm transition-colors cursor-pointer"
+                        title={`Inspect reference details for ${matchedPlate.plateNumber}`}
                       >
                         <BookOpen className="w-3.5 h-3.5 text-moss-green" />
-                        <span>Compare with {matchedPlate.plateNumber} →</span>
+                        <span>View Reference Plate ({matchedPlate.plateNumber})</span>
                       </button>
                     </div>
                   )}
 
-                  {/* Inline Reference Plate Selector */}
+                  {/* Inline Reference Plate Selector with AI Preferred Match and Recent Generated Images */}
                   {isPickingPlate && (
-                    <div className="p-4 rounded-2xl bg-parchment-warm/90 border border-border-subtle space-y-3 animate-in fade-in duration-200">
-                      <div className="flex items-center justify-between">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-parchment-warm/95 border border-border-subtle space-y-4 animate-in fade-in duration-200 shadow-sm">
+                      <div className="flex items-center justify-between pb-1 border-b border-border-subtle/60">
                         <div className="flex items-center gap-2">
                           <Layers className="w-4 h-4 text-moss-green" />
                           <span className="font-editorial text-sm font-bold text-forest-deep">
-                            Attach Authentic Botanical Reference Plate
+                            Attach Botanical Reference or Field Illustration
                           </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setPlatePickerEntryId(null)}
-                          className="text-xs text-text-muted hover:text-forest-deep cursor-pointer font-semibold"
+                          className="text-xs text-text-muted hover:text-forest-deep cursor-pointer font-semibold px-2 py-1 rounded-lg hover:bg-paper-white"
                         >
-                          Cancel
+                          Close
                         </button>
                       </div>
 
-                      <p className="text-[11px] text-text-muted">
-                        Select a curated high-resolution scientific plate to anchor this field observation:
-                      </p>
+                      {/* 1. Preferred AI Naturalist Recommendation Hero Card */}
+                      <div className="p-3.5 rounded-2xl bg-paper-white border-2 border-moss-green/40 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-16 h-16 rounded-xl overflow-hidden bg-parchment-warm border border-border-subtle shrink-0">
+                            <img
+                              src={matchedPlate.src}
+                              alt={matchedPlate.title}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-forest-deep bg-leaf-accent/30 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-forest-deep" />
+                                <span>AI Preferred Match</span>
+                              </span>
+                              <span className="text-xs font-bold text-moss-green">
+                                {matchedPlate.plateNumber}
+                              </span>
+                            </div>
+                            <h5 className="font-editorial text-sm font-bold text-forest-deep mt-0.5 truncate">
+                              {matchedPlate.title}
+                            </h5>
+                            <p className="text-[11px] text-text-muted line-clamp-1">
+                              {matchedPlate.subtitle} • Diagnostically matched for your observation notes
+                            </p>
+                          </div>
+                        </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                        {BOTANICAL_FIELD_PLATES.map(plate => {
-                          const isMatched = matchedPlate.id === plate.id;
-                          const isCurrent = ent.photoUrl === plate.src;
+                        <button
+                          type="button"
+                          onClick={() => handleAttachPlate(ent.id, matchedPlate.src)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 shadow-xs ${
+                            ent.photoUrl === matchedPlate.src
+                              ? 'bg-moss-green text-paper-white'
+                              : 'bg-forest-deep text-paper-white hover:bg-forest-dark'
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5 text-leaf-accent" />
+                          <span>{ent.photoUrl === matchedPlate.src ? 'Currently Attached' : 'Attach Recommended Plate'}</span>
+                        </button>
+                      </div>
 
-                          return (
-                            <div
-                              key={plate.id}
-                              className={`p-3 rounded-xl border bg-paper-white flex flex-col justify-between gap-2.5 transition-all shadow-xs ${
-                                isCurrent
-                                  ? 'border-moss-green ring-2 ring-moss-green/40'
-                                  : isMatched
-                                  ? 'border-leaf-accent/80 ring-1 ring-leaf-accent/30'
-                                  : 'border-border-subtle hover:border-forest-deep/30'
-                              }`}
-                            >
-                              <div className="space-y-1.5">
-                                <div className="h-28 w-full rounded-lg overflow-hidden bg-parchment-warm border border-border-subtle/50">
-                                  <img
-                                    src={plate.src}
-                                    alt={plate.title}
-                                    className="w-full h-full object-cover"
-                                  />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold text-moss-green uppercase">
-                                    {plate.plateNumber}
-                                  </span>
-                                  {isMatched && (
-                                    <span className="text-[9px] bg-forest-deep/10 text-forest-deep font-semibold px-1.5 py-0.5 rounded-full">
-                                      Recommended
-                                    </span>
-                                  )}
-                                </div>
-                                <h5 className="font-editorial text-xs font-bold text-forest-deep line-clamp-1">
-                                  {plate.title}
-                                </h5>
-                                <p className="text-[10px] text-text-muted line-clamp-2">
-                                  {plate.description}
-                                </p>
-                              </div>
+                      {/* 2. Recently Generated Field Illustrations (if any exist) */}
+                      {availableRecentSketches.length > 0 && (
+                        <div className="space-y-2.5 pt-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-forest-deep">
+                              <Sparkles className="w-3.5 h-3.5 text-moss-green" />
+                              <span>Recently Generated Field Illustrations ({availableRecentSketches.length})</span>
+                            </div>
+                            <span className="text-[10px] text-text-muted">
+                              From your journal observations
+                            </span>
+                          </div>
 
-                              <div className="flex items-center gap-1.5 pt-1">
-                                <button
-                                  type="button"
-                                  onClick={() => handleAttachPlate(ent.id, plate.src)}
-                                  className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-1 ${
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            {availableRecentSketches.map(sketch => {
+                              const isCurrent = ent.photoUrl === sketch.src;
+                              return (
+                                <div
+                                  key={sketch.src}
+                                  className={`p-3 rounded-xl border bg-paper-white flex flex-col justify-between gap-2.5 transition-all shadow-xs ${
                                     isCurrent
-                                      ? 'bg-moss-green text-paper-white'
-                                      : 'bg-forest-deep text-paper-white hover:bg-forest-dark'
+                                      ? 'border-moss-green ring-2 ring-moss-green/40'
+                                      : 'border-border-subtle hover:border-forest-deep/30'
                                   }`}
                                 >
-                                  {isCurrent && <Check className="w-3 h-3" />}
-                                  <span>{isCurrent ? 'Attached' : 'Attach Plate'}</span>
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setActiveTab('plates');
-                                    setSelectedPlateId(plate.id);
-                                    setTimeout(() => {
-                                      const el = document.getElementById(plate.id);
-                                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }, 120);
-                                  }}
-                                  className="p-1.5 rounded-lg border border-border-subtle hover:bg-parchment-warm text-text-muted hover:text-forest-deep cursor-pointer"
-                                  title="View Full Plate in Plates tab"
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                </button>
+                                  <div className="space-y-1.5">
+                                    <div className="h-28 w-full rounded-lg overflow-hidden bg-parchment-warm border border-border-subtle/50">
+                                      <img
+                                        src={sketch.src}
+                                        alt={sketch.title}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[10px] font-bold text-emerald-800 uppercase bg-emerald-50 px-1.5 py-0.5 rounded-md">
+                                        🎨 Field Specimen
+                                      </span>
+                                      <span className="text-[10px] text-text-muted">
+                                        {new Date(sketch.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                      </span>
+                                    </div>
+                                    <h5 className="font-editorial text-xs font-bold text-forest-deep line-clamp-1">
+                                      {sketch.title}
+                                    </h5>
+                                  </div>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttachPlate(ent.id, sketch.src)}
+                                    className={`w-full py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-1 ${
+                                      isCurrent
+                                        ? 'bg-moss-green text-paper-white'
+                                        : 'bg-forest-deep text-paper-white hover:bg-forest-dark'
+                                    }`}
+                                  >
+                                    {isCurrent && <Check className="w-3 h-3" />}
+                                    <span>{isCurrent ? 'Attached' : 'Attach This Illustration'}</span>
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. Curated Scientific Reference Plates (AI Recommended Sorted First) */}
+                      <div className="space-y-2.5 pt-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-forest-deep">
+                            <Layers className="w-3.5 h-3.5 text-moss-green" />
+                            <span>Curated Scientific Reference Plates ({BOTANICAL_FIELD_PLATES.length})</span>
+                          </div>
+                          <span className="text-[10px] text-text-muted">
+                            Authentic botanical reference folios
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                          {[
+                            matchedPlate,
+                            ...BOTANICAL_FIELD_PLATES.filter(p => p.id !== matchedPlate.id),
+                          ].map(plate => {
+                            const isMatched = matchedPlate.id === plate.id;
+                            const isCurrent = ent.photoUrl === plate.src;
+
+                            return (
+                              <div
+                                key={plate.id}
+                                className={`p-3 rounded-xl border bg-paper-white flex flex-col justify-between gap-2.5 transition-all shadow-xs ${
+                                  isCurrent
+                                    ? 'border-moss-green ring-2 ring-moss-green/40'
+                                    : isMatched
+                                    ? 'border-leaf-accent/80 ring-1 ring-leaf-accent/30'
+                                    : 'border-border-subtle hover:border-forest-deep/30'
+                                }`}
+                              >
+                                <div className="space-y-1.5">
+                                  <div className="h-28 w-full rounded-lg overflow-hidden bg-parchment-warm border border-border-subtle/50">
+                                    <img
+                                      src={plate.src}
+                                      alt={plate.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-moss-green uppercase">
+                                      {plate.plateNumber}
+                                    </span>
+                                    {isMatched && (
+                                      <span className="text-[9px] bg-forest-deep/10 text-forest-deep font-semibold px-1.5 py-0.5 rounded-full">
+                                        ✨ AI Preferred
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h5 className="font-editorial text-xs font-bold text-forest-deep line-clamp-1">
+                                    {plate.title}
+                                  </h5>
+                                  <p className="text-[10px] text-text-muted line-clamp-2">
+                                    {plate.description}
+                                  </p>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 pt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAttachPlate(ent.id, plate.src)}
+                                    className={`flex-1 py-1.5 px-2 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-1 ${
+                                      isCurrent
+                                        ? 'bg-moss-green text-paper-white'
+                                        : 'bg-forest-deep text-paper-white hover:bg-forest-dark'
+                                    }`}
+                                  >
+                                    {isCurrent && <Check className="w-3 h-3" />}
+                                    <span>{isCurrent ? 'Attached' : 'Attach Plate'}</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigate(`/studio#${plate.id}`);
+                                    }}
+                                    className="p-1.5 rounded-lg border border-border-subtle hover:bg-parchment-warm text-text-muted hover:text-forest-deep cursor-pointer"
+                                    title="View in Field Studio"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -901,12 +1083,12 @@ export const JournalView: React.FC = () => {
                       )}
                       <button
                         type="button"
-                        onClick={() => handleViewInBotanicalPlates(ent)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep font-semibold text-[11px] border border-border-subtle transition-colors cursor-pointer"
-                        title={`Jump to botanical reference ${activeRefPlate.plateNumber}`}
+                        onClick={() => setInspectingPlate(activeRefPlate)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/5 hover:bg-forest-deep/10 text-forest-deep font-semibold text-[11px] border border-border-subtle transition-colors cursor-pointer shadow-2xs"
+                        title={`Inspect botanical reference ${activeRefPlate.plateNumber} (${activeRefPlate.shortName})`}
                       >
                         <BookOpen className="w-3 h-3 text-moss-green" />
-                        <span>Reference: {activeRefPlate.plateNumber} ({activeRefPlate.shortName}) →</span>
+                        <span>Reference: {activeRefPlate.plateNumber} ({activeRefPlate.shortName})</span>
                       </button>
                     </div>
 
@@ -916,147 +1098,12 @@ export const JournalView: React.FC = () => {
                   </div>
                 </div>
               );
-            })
-          )}
-        </div>
-      )}
-
-      {/* Content for Botanical Field Plates */}
-      {activeTab === 'plates' && (
-        <div className="space-y-6">
-          {/* Active Navigation / Focus Bar */}
-          {selectedPlateId && (
-            <div className="p-3.5 rounded-2xl bg-forest-deep text-paper-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md animate-in fade-in duration-200">
-              <div className="flex items-center gap-2.5">
-                <BookOpen className="w-4 h-4 text-leaf-accent shrink-0" />
-                <span className="text-xs">
-                  Viewing focused scientific reference plate for your observation note.
-                </span>
-              </div>
-              <button
-                onClick={() => {
-                  setSelectedPlateId(null);
-                  setActiveTab('entries');
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-paper-white text-forest-deep text-xs font-semibold hover:bg-parchment-warm transition-colors cursor-pointer self-start sm:self-auto shrink-0 shadow-xs"
-              >
-                <ArrowLeft className="w-3.5 h-3.5 text-moss-green" />
-                <span>Return to Field Notes</span>
-              </button>
-            </div>
-          )}
-
-          {/* Quick Jump Bar across all plates */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            <span className="text-[11px] font-semibold text-text-muted shrink-0 flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-moss-green" />
-              <span>Plates:</span>
-            </span>
-            {BOTANICAL_FIELD_PLATES.map(plate => {
-              const isSelected = selectedPlateId === plate.id;
-              return (
-                <button
-                  key={plate.id}
-                  onClick={() => {
-                    setSelectedPlateId(plate.id);
-                    const el = document.getElementById(plate.id);
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-forest-deep text-paper-white shadow-xs'
-                      : 'bg-paper-white text-forest-deep border border-border-subtle hover:bg-parchment-warm'
-                  }`}
-                >
-                  {plate.plateNumber}: {plate.shortName}
-                </button>
-              );
-            })}
+            }))}
           </div>
+        );
+      })()}
 
-          {/* Render All 5 Botanical Field Plates */}
-          <div className="space-y-8">
-            {BOTANICAL_FIELD_PLATES.map((plate) => {
-              const isSelected = selectedPlateId === plate.id;
 
-              return (
-                <div
-                  key={plate.id}
-                  id={plate.id}
-                  className={`bg-paper-white rounded-3xl border p-6 shadow-xs space-y-4 transition-all scroll-mt-6 ${
-                    isSelected
-                      ? 'border-moss-green ring-4 ring-moss-green/20 shadow-md'
-                      : 'border-border-subtle'
-                  }`}
-                >
-                  {/* Plate Header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green block">
-                          Field Identification {plate.plateNumber}
-                        </span>
-                        {isSelected && (
-                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forest-deep text-paper-white">
-                            Active Reference
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="font-editorial text-2xl font-bold text-forest-deep">
-                        {plate.title}
-                      </h3>
-                    </div>
-                    <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-forest-deep/10 text-forest-deep self-start sm:self-auto">
-                      {plate.subtitle}
-                    </span>
-                  </div>
-
-                  {/* Plate Image */}
-                  <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm relative group">
-                    <img
-                      src={plate.src}
-                      alt={plate.title}
-                      className="w-full h-auto object-cover max-h-[520px] transition-transform duration-300 group-hover:scale-[1.01]"
-                    />
-                  </div>
-
-                  {/* Scientific Morphological Diagnostic Points */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    {plate.details.map((detail, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3.5 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1"
-                      >
-                        <span className="font-bold text-forest-deep block">
-                          {detail.title}
-                        </span>
-                        <p className="text-text-muted leading-relaxed">
-                          {detail.description}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Plate Footer / Jump back */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-xs text-text-muted border-t border-border-subtle/50">
-                    <p className="italic text-[11px]">
-                      {plate.description}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('entries')}
-                      className="inline-flex items-center gap-1.5 font-semibold text-forest-deep hover:underline cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5 text-moss-green" />
-                      <span>Back to Observation Notes</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       {/* Storage and Data Wipe Safety Section */}
       <div className="mt-12 pt-6 border-t border-border-subtle flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-xs text-text-muted">
@@ -1094,6 +1141,117 @@ export const JournalView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Botanical Reference Plate Inspection Modal */}
+      {inspectingPlate && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 bg-forest-dark/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setInspectingPlate(null)}
+        >
+          <div
+            className="bg-paper-white rounded-3xl border border-border-subtle max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-3 border-b border-border-subtle pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green">
+                    Scientific Folio {inspectingPlate.plateNumber}
+                  </span>
+                  <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep">
+                    {inspectingPlate.shortName}
+                  </span>
+                </div>
+                <h3 className="font-editorial text-xl sm:text-2xl font-bold text-forest-deep mt-0.5">
+                  {inspectingPlate.title}
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {inspectingPlate.subtitle}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setInspectingPlate(null)}
+                className="p-1.5 rounded-xl hover:bg-parchment-warm text-text-muted hover:text-forest-deep transition-colors cursor-pointer shrink-0"
+                aria-label="Close Reference Plate"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Reference Plate Image */}
+            <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm relative">
+              <img
+                src={inspectingPlate.src}
+                alt={inspectingPlate.title}
+                className="w-full h-auto object-cover max-h-[380px]"
+              />
+            </div>
+
+            {/* Scientific Description */}
+            <p className="text-xs text-text-muted leading-relaxed">
+              {inspectingPlate.description}
+            </p>
+
+            {/* Diagnostic Keys */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+              {inspectingPlate.details.map((detail, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1"
+                >
+                  <span className="font-bold text-forest-deep block text-[11px]">
+                    {detail.title}
+                  </span>
+                  <p className="text-text-muted text-[11px] leading-relaxed">
+                    {detail.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* Modal Actions */}
+            <div className="pt-3 border-t border-border-subtle flex flex-wrap items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedFilterPlateId(inspectingPlate.id);
+                  setInspectingPlate(null);
+                }}
+                className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+              >
+                <Layers className="w-3.5 h-3.5 text-moss-green" />
+                <span>Filter Journal by this Plate</span>
+              </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/studio');
+                  }}
+                  className="px-3.5 py-2 rounded-xl bg-forest-deep/10 hover:bg-forest-deep/15 text-forest-deep text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Palette className="w-3.5 h-3.5 text-moss-green" />
+                  <span>Illustrate in Studio</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInspectingPlate(null)}
+                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold cursor-pointer shadow-xs"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

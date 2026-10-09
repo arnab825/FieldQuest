@@ -7,6 +7,13 @@ import {
   MapPin,
   Sparkles,
   TreePine,
+  Trees,
+  Sprout,
+  Building2,
+  Mountain,
+  Home,
+  SlidersHorizontal,
+  Gauge,
   Volume2,
   Flower2,
   Bug,
@@ -172,12 +179,12 @@ export const AdventureSetupForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Duration Selection */}
-        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs">
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-6 shadow-xs">
           <label className="flex items-center gap-2 text-sm font-bold text-forest-deep mb-3 font-editorial">
             <Clock className="w-4 h-4 text-moss-green" />
             <span>1. Available Time</span>
           </label>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {[
               { mins: 15, label: '15 min', sub: 'Sensory Walk' },
               { mins: 30, label: '30 min', sub: 'Field Observation' },
@@ -187,16 +194,16 @@ export const AdventureSetupForm: React.FC = () => {
                 key={item.mins}
                 type="button"
                 onClick={() => setDuration(item.mins as 15 | 30 | 60)}
-                className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                className={`p-2.5 sm:p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
                   duration === item.mins
                     ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
                     : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
                 }`}
               >
-                <div className="font-editorial text-lg font-bold">
+                <div className="font-editorial text-base sm:text-lg font-bold">
                   {item.label}
                 </div>
-                <div className={`text-[11px] ${duration === item.mins ? 'text-leaf-accent' : 'text-text-muted'}`}>
+                <div className={`text-[10px] sm:text-[11px] leading-tight ${duration === item.mins ? 'text-leaf-accent' : 'text-text-muted'}`}>
                   {item.sub}
                 </div>
               </button>
@@ -205,32 +212,39 @@ export const AdventureSetupForm: React.FC = () => {
         </section>
 
         {/* Environment Selection */}
-        <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs">
+        <section className="bg-paper-white rounded-2xl border border-border-subtle p-4 sm:p-6 shadow-xs">
           <label className="flex items-center gap-2 text-sm font-bold text-forest-deep mb-3 font-editorial">
             <MapPin className="w-4 h-4 text-moss-green" />
             <span>2. Your Immediate Environment</span>
           </label>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
             {[
-              { id: 'park', name: 'City Park' },
-              { id: 'garden', name: 'Garden' },
-              { id: 'urban', name: 'Urban Street' },
-              { id: 'trail', name: 'Nature Trail' },
-              { id: 'balcony', name: 'Balcony / Porch' },
-            ].map(env => (
-              <button
-                key={env.id}
-                type="button"
-                onClick={() => setEnvironment(env.id as EnvironmentType)}
-                className={`p-3 rounded-xl border text-xs font-medium transition-all text-center cursor-pointer ${
-                  environment === env.id
-                    ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
-                    : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
-                }`}
-              >
-                {env.name}
-              </button>
-            ))}
+              { id: 'park', name: 'City Park', icon: Trees },
+              { id: 'garden', name: 'Garden', icon: Sprout },
+              { id: 'urban', name: 'Urban Street', icon: Building2 },
+              { id: 'trail', name: 'Nature Trail', icon: Mountain },
+              { id: 'balcony', name: 'Balcony / Porch', icon: Home },
+            ].map(env => {
+              const Icon = env.icon;
+              const isSelected = environment === env.id;
+              return (
+                <button
+                  key={env.id}
+                  type="button"
+                  onClick={() => setEnvironment(env.id as EnvironmentType)}
+                  className={`p-2.5 sm:p-3 rounded-xl border text-xs font-medium transition-all text-center flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                    env.id === 'balcony' ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''
+                  } ${
+                    isSelected
+                      ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                      : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-leaf-accent' : 'text-moss-green'}`} />
+                  <span>{env.name}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
 
@@ -280,15 +294,16 @@ export const AdventureSetupForm: React.FC = () => {
         {/* Difficulty & Accessibility Options */}
         <section className="bg-paper-white rounded-2xl border border-border-subtle p-5 sm:p-6 shadow-xs space-y-4">
           <label className="flex items-center gap-2 text-sm font-bold text-forest-deep font-editorial">
-            <Accessibility className="w-4 h-4 text-moss-green" />
+            <SlidersHorizontal className="w-4 h-4 text-moss-green" />
             <span>4. Depth & Mobility Options</span>
           </label>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Difficulty Toggle */}
             <div className="flex items-center gap-2 p-3 rounded-xl border border-border-subtle bg-parchment-warm/40">
-              <span className="text-xs font-semibold text-forest-deep w-20">
-                Difficulty:
+              <span className="text-xs font-semibold text-forest-deep flex items-center gap-1.5 w-24 shrink-0">
+                <Gauge className="w-3.5 h-3.5 text-moss-green" />
+                <span>Difficulty:</span>
               </span>
               <div className="flex gap-1.5 flex-1">
                 {(['easy', 'exploratory'] as Difficulty[]).map(d => (
@@ -310,14 +325,17 @@ export const AdventureSetupForm: React.FC = () => {
 
             {/* Mobility Toggle */}
             <label className="flex items-center justify-between p-3 rounded-xl border border-border-subtle bg-parchment-warm/40 cursor-pointer">
-              <span className="text-xs font-medium text-forest-deep">
-                Stationary / Seated observation only
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <Accessibility className="w-4 h-4 text-moss-green shrink-0" />
+                <span className="text-xs font-medium text-forest-deep truncate">
+                  Stationary / Seated observation only
+                </span>
+              </div>
               <input
                 type="checkbox"
                 checked={accessibleMobility}
                 onChange={e => setAccessibleMobility(e.target.checked)}
-                className="w-4 h-4 rounded text-forest-deep accent-forest-deep cursor-pointer"
+                className="w-4 h-4 rounded text-forest-deep accent-forest-deep cursor-pointer shrink-0 ml-2"
               />
             </label>
           </div>
@@ -325,8 +343,9 @@ export const AdventureSetupForm: React.FC = () => {
           {/* Optional Custom Focus */}
           <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-bold text-forest-deep">
-                Custom observation focus (tailor missions to a specific topic):
+              <label className="flex items-center gap-1.5 text-xs font-bold text-forest-deep">
+                <Sparkles className="w-3.5 h-3.5 text-moss-green" />
+                <span>Custom observation focus (tailor missions to a specific topic):</span>
               </label>
               {customFocus && (
                 <button

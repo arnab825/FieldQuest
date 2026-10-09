@@ -1,106 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Feather } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface NaturalistNoteViewProps {
   content: string;
   variant?: 'card' | 'inline' | 'preview';
   maxInitialLength?: number;
   className?: string;
-}
-
-/**
- * Parses raw text, markdown-like bolding, and structured botanical observation keys
- * into clean, readable, structured field notes.
- */
-function formatNaturalistText(text: string): React.ReactNode[] {
-  if (!text) return [];
-
-  // Normalize newlines
-  const rawClean = text.replace(/\r\n/g, '\n');
-
-  // If text already has explicit newlines
-  const paragraphs = rawClean.split(/\n\s*\n/).filter(p => p.trim().length > 0);
-
-  // If text is a single giant run-on paragraph but contains structured keys like "Key: Value",
-  // let's intelligently split by known botanical/naturalist key phrases or "Pattern: ", "Property: "
-  const processedParagraphs: string[] = [];
-
-  for (const p of paragraphs) {
-    // Check if paragraph has multiple colon-separated structured sections
-    // e.g. "Intro text... Key Feature: Details. Another Feature: More details."
-    const structuredPattern = /([A-Z][A-Za-z0-9\s()/-]{2,30}:)/g;
-    const matches = Array.from(p.matchAll(structuredPattern));
-
-    if (matches.length > 1) {
-      // Split into logical subsections
-      let lastIndex = 0;
-      const chunks: string[] = [];
-
-      for (let i = 0; i < matches.length; i++) {
-        const match = matches[i];
-        const matchIndex = match.index ?? 0;
-
-        if (matchIndex > lastIndex) {
-          const prefix = p.substring(lastIndex, matchIndex).trim();
-          if (prefix) chunks.push(prefix);
-        }
-
-        const nextIndex = i + 1 < matches.length ? (matches[i + 1].index ?? p.length) : p.length;
-        const segment = p.substring(matchIndex, nextIndex).trim();
-        if (segment) chunks.push(segment);
-
-        lastIndex = nextIndex;
-      }
-
-      processedParagraphs.push(...chunks);
-    } else {
-      processedParagraphs.push(p);
-    }
-  }
-
-  // Render processed chunks
-  return processedParagraphs.map((chunk, idx) => {
-    // Check if chunk is a bullet point
-    const isBullet = chunk.startsWith('•') || chunk.startsWith('-') || chunk.startsWith('*');
-    const cleanChunk = isBullet ? chunk.replace(/^[\s•\-*]+/, '').trim() : chunk;
-
-    // Check if chunk starts with a key/label (e.g., "Central Midrib: Note the main...")
-    const colonMatch = cleanChunk.match(/^([A-Z][A-Za-z0-9\s()/-]{2,35}:)\s*(.*)$/);
-
-    if (colonMatch) {
-      const label = colonMatch[1];
-      const rest = colonMatch[2];
-
-      return (
-        <div
-          key={idx}
-          className="my-1.5 p-2 sm:p-2.5 rounded-lg bg-parchment-warm/50 border border-border-subtle/70 text-xs sm:text-sm text-forest-deep flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2"
-        >
-          <span className="font-semibold text-moss-green font-editorial tracking-tight shrink-0 bg-forest-deep/5 px-2 py-0.5 rounded-md inline-block w-fit">
-            {label}
-          </span>
-          <span className="text-forest-deep/90 leading-relaxed font-sans">
-            {renderInlineMarkdown(rest)}
-          </span>
-        </div>
-      );
-    }
-
-    if (isBullet) {
-      return (
-        <div key={idx} className="flex items-start gap-2 my-1 pl-1 text-xs sm:text-sm text-forest-deep/90 leading-relaxed font-sans">
-          <span className="w-1.5 h-1.5 rounded-full bg-moss-green mt-1.5 shrink-0" />
-          <div>{renderInlineMarkdown(cleanChunk)}</div>
-        </div>
-      );
-    }
-
-    return (
-      <p key={idx} className="my-1.5 text-xs sm:text-sm text-forest-deep/90 leading-relaxed font-sans">
-        {renderInlineMarkdown(chunk)}
-      </p>
-    );
-  });
 }
 
 /**
@@ -124,10 +29,169 @@ function renderInlineMarkdown(text: string): React.ReactNode {
   });
 }
 
+/**
+ * Parses raw observation text, AI naturalist guidelines, and structured field notes
+ * into an authentic, highly readable, botanical field journal layout.
+ */
+function formatNaturalistText(text: string): React.ReactNode {
+  if (!text) return null;
+
+  const rawClean = text.replace(/\r\n/g, '\n').trim();
+  const rawLines = rawClean.split('\n');
+
+  // Group into logical blocks (headers, subheadings, bullet items, key-values, paragraphs)
+  const blocks: Array<{
+    type: 'header' | 'subheading' | 'bullet' | 'key-value' | 'paragraph';
+    title?: string;
+    content: string;
+  }> = [];
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i].trim();
+    if (!line) continue;
+
+    // 1. Bracketed section headers e.g. [Soundscape Stratification]
+    const bracketMatch = line.match(/^\[(.*?)\]\s*(.*)$/);
+    if (bracketMatch) {
+      blocks.push({
+        type: 'header',
+        title: bracketMatch[1],
+        content: bracketMatch[2].replace(/^[\s•\-*]+/, '').trim(),
+      });
+      continue;
+    }
+
+    // 2. Markdown headers #, ##, ###
+    const mdHeaderMatch = line.match(/^#{1,4}\s+(.*)$/);
+    if (mdHeaderMatch) {
+      blocks.push({
+        type: 'subheading',
+        content: mdHeaderMatch[1].trim(),
+      });
+      continue;
+    }
+
+    // 3. Bullet points e.g. • Reticulate (Netted): Secondary veins...
+    const bulletMatch = line.match(/^[\s•\-*]+\s*(.*)$/);
+    if (bulletMatch) {
+      const bulletBody = bulletMatch[1].trim();
+      blocks.push({
+        type: 'bullet',
+        content: bulletBody,
+      });
+      continue;
+    }
+
+    // 4. Category headings ending in a colon e.g. "Branching Pattern:" or "Leaf Margins (Edges):"
+    const isHeadingColon = line.endsWith(':') && line.length < 80;
+    if (isHeadingColon) {
+      blocks.push({
+        type: 'subheading',
+        content: line.replace(/:$/, ''),
+      });
+      continue;
+    }
+
+    // 5. Standalone Key: Value observation line e.g. "Central Midrib: Note the main..."
+    const colonMatch = line.match(/^([A-Z][A-Za-z0-9\s()/-]{2,35}):\s*(.*)$/);
+    if (colonMatch && colonMatch[2].trim()) {
+      blocks.push({
+        type: 'key-value',
+        title: colonMatch[1],
+        content: colonMatch[2].trim(),
+      });
+      continue;
+    }
+
+    // 6. Regular narrative paragraph
+    blocks.push({
+      type: 'paragraph',
+      content: line,
+    });
+  }
+
+  return (
+    <div className="space-y-2 text-xs sm:text-sm text-forest-deep/90 leading-relaxed font-sans">
+      {blocks.map((block, idx) => {
+        if (block.type === 'header') {
+          return (
+            <div key={idx} className="pt-2 pb-1 flex flex-wrap items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green bg-moss-green/10 border border-moss-green/25 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                <span>🌿</span>
+                <span>{block.title}</span>
+              </span>
+              {block.content && (
+                <span className="text-xs text-text-muted">
+                  {renderInlineMarkdown(block.content)}
+                </span>
+              )}
+            </div>
+          );
+        }
+
+        if (block.type === 'subheading') {
+          return (
+            <div key={idx} className="pt-2 pb-0.5 flex items-center gap-2">
+              <span className="w-1.5 h-3.5 rounded-full bg-moss-green shrink-0" />
+              <h5 className="font-editorial font-bold text-xs sm:text-sm text-forest-deep">
+                {block.content}
+              </h5>
+            </div>
+          );
+        }
+
+        if (block.type === 'bullet') {
+          // Check if bullet item has "Key: Value" or "**Key:** Value"
+          const bulletColonMatch = block.content.match(/^([A-Z][A-Za-z0-9\s()/-]{2,35}):\s*(.*)$/);
+          return (
+            <div key={idx} className="flex items-start gap-2.5 pl-2 my-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-moss-green mt-1.5 shrink-0" />
+              <div className="leading-relaxed">
+                {bulletColonMatch ? (
+                  <>
+                    <strong className="font-semibold text-forest-deep">
+                      {bulletColonMatch[1]}:{' '}
+                    </strong>
+                    <span>{renderInlineMarkdown(bulletColonMatch[2])}</span>
+                  </>
+                ) : (
+                  renderInlineMarkdown(block.content)
+                )}
+              </div>
+            </div>
+          );
+        }
+
+        if (block.type === 'key-value') {
+          return (
+            <div
+              key={idx}
+              className="my-1.5 p-2 sm:p-2.5 rounded-xl bg-parchment-warm/40 border border-border-subtle/70 flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 shadow-2xs"
+            >
+              <span className="font-semibold text-forest-deep font-editorial tracking-tight shrink-0 bg-forest-deep/5 px-2 py-0.5 rounded-md inline-block w-fit text-xs">
+                {block.title}:
+              </span>
+              <span className="leading-relaxed font-sans text-forest-deep/90">
+                {renderInlineMarkdown(block.content)}
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="my-1.5 leading-relaxed font-sans">
+            {renderInlineMarkdown(block.content)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export const NaturalistNoteView: React.FC<NaturalistNoteViewProps> = ({
   content,
-  variant = 'card',
-  maxInitialLength = 260,
+  variant: _variant = 'card',
+  maxInitialLength = 360,
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -139,53 +203,28 @@ export const NaturalistNoteView: React.FC<NaturalistNoteViewProps> = ({
     ? content.slice(0, maxInitialLength).trim() + '...'
     : content;
 
-  // Inline variant (used inside mission lists)
-  if (variant === 'inline') {
-    return (
-      <div className={`mt-2 p-3 rounded-xl bg-parchment-warm/70 border border-moss-green/30 ${className}`}>
-        <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-border-subtle/50">
-          <div className="flex items-center gap-1.5 text-[11px] font-semibold text-moss-green tracking-wide uppercase">
-            <Feather className="w-3.5 h-3.5 text-forest-deep" />
-            <span>Field Observation Log</span>
-          </div>
-
-          {isLong && (
-            <button
-              type="button"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-[11px] text-forest-deep font-medium hover:underline flex items-center gap-0.5 cursor-pointer"
-            >
-              <span>{isExpanded ? 'Show Less' : 'Expand Full'}</span>
-              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          {formatNaturalistText(displayContent)}
-        </div>
-      </div>
-    );
-  }
-
-  // Card variant (used inside Field Notes tab)
   return (
-    <div className={`space-y-2 ${className}`}>
-      <div className="space-y-1.5">
-        {formatNaturalistText(displayContent)}
-      </div>
+    <div className={`relative ${className}`}>
+      {formatNaturalistText(displayContent)}
 
       {isLong && (
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-forest-deep bg-parchment-warm hover:bg-forest-deep/10 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-          >
-            <span>{isExpanded ? 'Collapse note' : 'Read full observation note'}</span>
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-moss-green" /> : <ChevronDown className="w-3.5 h-3.5 text-moss-green" />}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-2.5 text-xs font-semibold text-forest-deep hover:text-forest-dark flex items-center gap-1 cursor-pointer transition-colors"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="w-3.5 h-3.5 text-moss-green" />
+              <span>Show Less</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3.5 h-3.5 text-moss-green" />
+              <span>Read Full Botanical Field Note</span>
+            </>
+          )}
+        </button>
       )}
     </div>
   );
