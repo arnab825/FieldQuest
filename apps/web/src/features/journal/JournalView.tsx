@@ -12,6 +12,7 @@ import {
   ChevronUp,
   Upload,
   Image,
+  Feather,
 } from 'lucide-react';
 import {
   getAllAdventures,
@@ -24,6 +25,7 @@ import {
   JournalEntry,
 } from '../../lib/db.js';
 import { AdventureSessionRecord } from '../../types/index.js';
+import { NaturalistNoteView } from '../../components/NaturalistNoteView.js';
 
 export const JournalView: React.FC = () => {
   const [adventures, setAdventures] = useState<AdventureSessionRecord[]>([]);
@@ -354,9 +356,11 @@ export const JournalView: React.FC = () => {
                               </div>
                               <p className="text-forest-deep/80">{m.objective}</p>
                               {m.userNotes && (
-                                <p className="mt-1 text-emerald-900 font-medium">
-                                  📝 {m.userNotes}
-                                </p>
+                                <NaturalistNoteView
+                                  content={m.userNotes}
+                                  variant="inline"
+                                  maxInitialLength={180}
+                                />
                               )}
                             </div>
                             {m.userPhotoUrl && (
@@ -395,49 +399,82 @@ export const JournalView: React.FC = () => {
             entries.map(ent => (
               <div
                 key={ent.id}
-                className="bg-paper-white rounded-2xl border border-border-subtle p-5 shadow-xs space-y-3"
+                className="bg-paper-white rounded-2xl border border-border-subtle p-6 shadow-xs hover:shadow-md transition-shadow space-y-4 border-l-4 border-l-forest-deep relative overflow-hidden"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    {ent.missionTitle && (
-                      <span className="text-xs font-semibold text-moss-green block mb-1">
-                        {ent.missionTitle}
+                {/* Header with Title & Action */}
+                <div className="flex items-start justify-between gap-3 pb-3 border-b border-border-subtle/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-forest-deep/10 text-forest-deep flex items-center justify-center shrink-0">
+                      <Feather className="w-4 h-4 text-moss-green" />
+                    </div>
+                    <div>
+                      <h4 className="font-editorial text-base sm:text-lg font-bold text-forest-deep">
+                        {ent.missionTitle || 'Field Observation'}
+                      </h4>
+                      <span className="text-[11px] font-medium text-text-muted">
+                        Botanical Specimen & Sensory Field Log
                       </span>
-                    )}
-                    <p className="text-sm text-forest-deep leading-relaxed">
-                      {ent.notes}
-                    </p>
+                    </div>
                   </div>
 
                   <button
                     onClick={() => handleDeleteEntry(ent.id)}
-                    className="text-text-muted hover:text-red-700 transition-colors p-1 cursor-pointer"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-red-700 hover:bg-red-50 transition-colors cursor-pointer"
                     title="Delete entry"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
 
+                {/* Formatted Naturalist Note */}
+                <div className="py-1">
+                  <NaturalistNoteView
+                    content={ent.notes}
+                    variant="card"
+                    maxInitialLength={320}
+                  />
+                </div>
+
+                {/* Optional Specimen Photo */}
                 {ent.photoUrl && (
                   <div className="pt-2">
-                    <img
-                      src={ent.photoUrl}
-                      alt="Observation photo"
-                      className="max-h-60 rounded-xl object-cover border border-border-subtle shadow-xs"
-                    />
+                    <div className="rounded-xl overflow-hidden border border-border-subtle max-w-md bg-parchment-warm">
+                      <img
+                        src={ent.photoUrl}
+                        alt="Observation photo"
+                        className="max-h-72 w-full object-cover shadow-2xs"
+                      />
+                      <div className="p-2 bg-parchment-warm/80 text-[11px] text-text-muted italic flex items-center gap-1.5">
+                        <Image className="w-3.5 h-3.5 text-moss-green" />
+                        <span>Specimen photographic record</span>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border-subtle text-[11px] text-text-muted">
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {new Date(ent.timestamp).toLocaleString()}
-                  </span>
-                  {ent.environment && (
-                    <span className="px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle">
-                      {ent.environment}
+                {/* Metadata Footer */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border-subtle text-xs text-text-muted">
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-moss-green" />
+                      {new Date(ent.timestamp).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </span>
-                  )}
+                    {ent.environment && (
+                      <span className="px-2.5 py-0.5 rounded-full bg-parchment-warm text-forest-deep font-medium border border-border-subtle text-[11px] capitalize">
+                        🌿 {ent.environment}
+                      </span>
+                    )}
+                  </div>
+
+                  <span className="text-[11px] text-text-muted">
+                    {ent.notes.split(/\s+/).filter(Boolean).length} words recorded
+                  </span>
                 </div>
               </div>
             ))

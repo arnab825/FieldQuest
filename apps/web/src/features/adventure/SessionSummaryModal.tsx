@@ -87,15 +87,20 @@ export const SessionSummaryModal: React.FC<SessionSummaryModalProps> = ({
         </div>
 
         {/* Overall Reflection Prompt */}
-        <div className="mb-6">
-          <label className="block text-xs font-semibold text-forest-deep mb-1.5">
-            Capture an overall thought or sensory discovery:
-          </label>
+        <div className="mb-6 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold text-forest-deep">
+              Capture an overall thought or sensory discovery:
+            </label>
+            <span className="text-[11px] text-text-muted">
+              {reflection.split(/\s+/).filter(Boolean).length} words
+            </span>
+          </div>
           <textarea
             value={reflection}
             onChange={e => setReflection(e.target.value)}
-            placeholder="What was your favorite observation today? Notice any unexpected insects, lichens, or sounds?"
-            className="w-full h-24 p-3 rounded-xl border border-border-subtle bg-paper-white text-xs text-forest-deep focus:outline-none focus:border-forest-deep resize-none"
+            placeholder="What was your favorite observation today? Notice any unexpected insects, lichens, foliage colors, or quiet sounds?"
+            className="w-full min-h-[100px] p-3.5 rounded-xl border border-border-subtle bg-parchment-warm/40 focus:bg-paper-white text-xs sm:text-sm text-forest-deep leading-relaxed focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10 resize-y transition-all placeholder:text-text-muted/70"
           />
         </div>
 

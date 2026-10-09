@@ -12,10 +12,10 @@ import {
   Shield,
   HelpCircle,
   Sparkles,
-  FileText,
   AlertTriangle,
   Image,
   BookOpen,
+  Feather,
 } from 'lucide-react';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 import { ScreenDownOverlay } from './ScreenDownOverlay.js';
@@ -435,18 +435,44 @@ export const ActiveAdventureScreen: React.FC = () => {
         </div>
 
         {/* Observation Log Form */}
-        <div className="pt-4 border-t border-border-subtle space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-forest-deep flex items-center gap-1.5">
-            <FileText className="w-4 h-4 text-moss-green" />
-            <span>Observation Notes & Photo</span>
-          </h2>
+        <div className="pt-4 border-t border-border-subtle space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-forest-deep flex items-center gap-1.5">
+              <Feather className="w-4 h-4 text-moss-green" />
+              <span>Naturalist Field Log & Observation Notes</span>
+            </h2>
+            <span className="text-[11px] text-text-muted">
+              {notes.split(/\s+/).filter(Boolean).length} words
+            </span>
+          </div>
 
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
-            placeholder="Log specific details: what did you notice about the leaf margins, bark lichen, or bird flight pattern?"
-            className="w-full h-24 p-3 rounded-xl border border-border-subtle bg-paper-white text-xs text-forest-deep focus:outline-none focus:border-forest-deep resize-none"
+            placeholder="Log specific details: what did you notice about vein symmetry, leaf margins, bark lichen textures, or sensory sound layers?"
+            className="w-full min-h-[110px] p-3.5 rounded-xl border border-border-subtle bg-parchment-warm/40 focus:bg-paper-white text-xs sm:text-sm text-forest-deep leading-relaxed focus:outline-none focus:border-forest-deep focus:ring-2 focus:ring-forest-deep/10 resize-y transition-all placeholder:text-text-muted/70"
           />
+
+          {/* Quick Naturalist Observation Tags */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="text-[11px] font-medium text-text-muted mr-1">Quick prompts:</span>
+            {[
+              { label: '🌿 Vein Symmetry', text: 'Vein Symmetry: ' },
+              { label: '🔬 Leaf Margins', text: 'Leaf Margins: ' },
+              { label: '🌲 Lichen Growth', text: 'Lichen Growth: ' },
+              { label: '👂 Sound Layer', text: 'Sound Layer: ' },
+              { label: '✨ Cuticle / Surface', text: 'Surface Properties: ' },
+            ].map(chip => (
+              <button
+                key={chip.label}
+                type="button"
+                onClick={() => setNotes(prev => prev ? `${prev}\n${chip.text}` : chip.text)}
+                className="text-[11px] px-2 py-0.5 rounded-md bg-parchment-warm hover:bg-forest-deep/10 text-forest-deep border border-border-subtle transition-colors cursor-pointer"
+              >
+                + {chip.label}
+              </button>
+            ))}
+          </div>
 
           {/* Photo Capture / Select */}
           <div className="flex items-center gap-3">
