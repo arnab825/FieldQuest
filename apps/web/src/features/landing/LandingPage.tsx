@@ -49,7 +49,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
             >
               <Compass className="w-5 h-5 text-leaf-accent group-hover:rotate-45 transition-transform" />
               <span>Begin An Adventure</span>
-              <ArrowRight className="w-4 h-4 text-leaf-accent" />
+              <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-1.5 transition-transform" />
             </Link>
 
             <button
@@ -234,8 +234,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative">
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 rounded-full bg-parchment-warm border border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg">
+          {/* Desktop Animated Connector Arrow 1 -> 2 */}
+          <div className="hidden sm:flex absolute top-5 left-[33.3%] -translate-x-1/2 -translate-y-1/2 items-center pointer-events-none z-10 w-28 md:w-36 justify-center">
+            <svg className="w-full h-8 overflow-visible" viewBox="0 0 120 24" fill="none">
+              <line
+                x1="8"
+                y1="12"
+                x2="98"
+                y2="12"
+                stroke="#71866B"
+                strokeWidth="2.5"
+                strokeDasharray="6 4"
+                className="animate-trail-flow"
+              />
+              <g className="animate-slide-arrow">
+                <path
+                  d="M90 6 L106 12 L90 18"
+                  stroke="#173D32"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                <circle cx="106" cy="12" r="3" fill="#B8E986" stroke="#173D32" strokeWidth="1.5" />
+              </g>
+            </svg>
+          </div>
+
+          {/* Desktop Animated Connector Arrow 2 -> 3 */}
+          <div className="hidden sm:flex absolute top-5 left-[66.7%] -translate-x-1/2 -translate-y-1/2 items-center pointer-events-none z-10 w-28 md:w-36 justify-center">
+            <svg className="w-full h-8 overflow-visible" viewBox="0 0 120 24" fill="none">
+              <line
+                x1="8"
+                y1="12"
+                x2="98"
+                y2="12"
+                stroke="#71866B"
+                strokeWidth="2.5"
+                strokeDasharray="6 4"
+                className="animate-trail-flow"
+              />
+              <g className="animate-slide-arrow">
+                <path
+                  d="M90 6 L106 12 L90 18"
+                  stroke="#173D32"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+                <circle cx="106" cy="12" r="3" fill="#B8E986" stroke="#173D32" strokeWidth="1.5" />
+              </g>
+            </svg>
+          </div>
+
+          {/* Step 1 */}
+          <div className="text-center space-y-3 relative p-5 rounded-2xl bg-paper-white/70 border border-border-subtle/80 shadow-xs hover:border-moss-green/50 hover:shadow-sm transition-all">
+            <div className="w-10 h-10 rounded-full bg-parchment-warm border-2 border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg shadow-xs">
               1
             </div>
             <h4 className="font-editorial text-lg font-bold text-forest-deep">
@@ -244,10 +299,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
             <p className="text-xs text-text-muted leading-relaxed">
               Choose 15, 30, or 60 minutes and select your environment (park, street, balcony, garden).
             </p>
+
+            {/* Mobile Animated Downward Flow Arrow 1 -> 2 */}
+            <div className="sm:hidden flex flex-col items-center justify-center pt-4 text-forest-deep animate-bounce-down">
+              <span className="h-6 w-0.5 border-l-2 border-dashed border-moss-green/70"></span>
+              <svg className="w-6 h-6 text-forest-deep -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 4v14" />
+                <path d="m19 13-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 rounded-full bg-parchment-warm border border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg">
+          {/* Step 2 */}
+          <div className="text-center space-y-3 relative p-5 rounded-2xl bg-paper-white/70 border border-border-subtle/80 shadow-xs hover:border-moss-green/50 hover:shadow-sm transition-all">
+            <div className="w-10 h-10 rounded-full bg-parchment-warm border-2 border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg shadow-xs">
               2
             </div>
             <h4 className="font-editorial text-lg font-bold text-forest-deep">
@@ -256,10 +321,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
             <p className="text-xs text-text-muted leading-relaxed">
               Engage with one observation quest at a time with screen-down pauses and mindful sensory checks.
             </p>
+
+            {/* Mobile Animated Downward Flow Arrow 2 -> 3 */}
+            <div className="sm:hidden flex flex-col items-center justify-center pt-4 text-forest-deep animate-bounce-down">
+              <span className="h-6 w-0.5 border-l-2 border-dashed border-moss-green/70"></span>
+              <svg className="w-6 h-6 text-forest-deep -mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 4v14" />
+                <path d="m19 13-7 7-7-7" />
+              </svg>
+            </div>
           </div>
 
-          <div className="text-center space-y-3">
-            <div className="w-10 h-10 rounded-full bg-parchment-warm border border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg">
+          {/* Step 3 */}
+          <div className="text-center space-y-3 relative p-5 rounded-2xl bg-paper-white/70 border border-border-subtle/80 shadow-xs hover:border-moss-green/50 hover:shadow-sm transition-all">
+            <div className="w-10 h-10 rounded-full bg-parchment-warm border-2 border-forest-deep text-forest-deep font-editorial font-bold flex items-center justify-center mx-auto text-lg shadow-xs">
               3
             </div>
             <h4 className="font-editorial text-lg font-bold text-forest-deep">
@@ -274,10 +349,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
         <div className="mt-14 text-center flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             to="/setup"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-forest-deep text-paper-white font-medium hover:bg-forest-dark transition-colors shadow-sm cursor-pointer"
+            className="group inline-flex items-center gap-2.5 px-8 py-3.5 rounded-xl bg-forest-deep text-paper-white font-medium hover:bg-forest-dark transition-all shadow-md hover:shadow-lg cursor-pointer"
           >
-            <Eye className="w-4 h-4 text-leaf-accent" />
+            <Eye className="w-4 h-4 text-leaf-accent group-hover:scale-110 transition-transform" />
             <span>Create Your First Quest</span>
+            <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-2 transition-transform" />
           </Link>
 
           <button

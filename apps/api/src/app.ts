@@ -38,6 +38,22 @@ export function createApp() {
   // Rate Limiting on API endpoints
   app.use('/api', apiRateLimiter);
 
+  // Root Route for friendly API documentation & status
+  app.get('/', (_req, res) => {
+    res.json({
+      name: 'FieldQuest Backend API',
+      status: 'online',
+      version: '1.0.0',
+      webAppUrl: 'http://localhost:5173',
+      endpoints: {
+        health: '/api/v1/health',
+        aiStatus: '/api/v1/ai/status',
+        generateMissions: '/api/v1/missions/generate',
+      },
+      message: 'To explore FieldQuest, open the web app at http://localhost:5173 in your browser.',
+    });
+  });
+
   // Routes
   app.use('/api/v1/health', healthRouter);
   app.use('/api/v1/ai', aiRouter);

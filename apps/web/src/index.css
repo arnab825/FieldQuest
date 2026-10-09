@@ -63,3 +63,61 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #71866B;
 }
+
+@keyframes trailFlow {
+  from {
+    stroke-dashoffset: 18;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes slideArrow {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateX(8px);
+    opacity: 1;
+  }
+}
+
+@keyframes bounceDown {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseArrow {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-trail-flow {
+  animation: trailFlow 1.2s linear infinite;
+}
+
+.animate-slide-arrow {
+  animation: slideArrow 1.5s ease-in-out infinite;
+}
+
+.animate-bounce-down {
+  animation: bounceDown 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-arrow {
+  animation: pulseArrow 1.3s ease-in-out infinite;
+}
+
+
