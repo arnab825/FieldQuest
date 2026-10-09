@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # FieldQuest PWA Frontend (Nginx Alpine)
+  web:
+    container_name: fieldquest-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - fieldquest-net
+
+  # FieldQuest Backend API (Node.js 22 Alpine)
+  api:
+    container_name: fieldquest-api
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - AI_PROVIDER=demo
+      - CLIENT_ORIGIN=http://localhost:5173,http://localhost:80,http://127.0.0.1:5173
+    restart: unless-stopped
+    networks:
+      - fieldquest-net
+
+  # Optional Local AI Engine (Run with: podman compose --profile ai up)
+  ai-engine:
+    profiles: ["ai"]
+    container_name: fieldquest-ai-engine
+    image: localai/localai:latest-cpu
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./models:/models:Z
+    restart: unless-stopped
+    networks:
+      - fieldquest-net
+
+networks:
+  fieldquest-net:
+    driver: bridge

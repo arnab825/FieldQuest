@@ -14,7 +14,11 @@
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
-    "typecheck": "npm run typecheck --workspaces"
+    "typecheck": "npm run typecheck --workspaces",
+    "podman:build": "podman compose build",
+    "podman:up": "podman compose up -d",
+    "podman:down": "podman compose down",
+    "podman:logs": "podman compose logs -f"
   },
   "keywords": [
     "nature-exploration",

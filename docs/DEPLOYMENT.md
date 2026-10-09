@@ -88,3 +88,41 @@ node apps/api/dist/server.js
 ## 5. Health Checks & Monitoring
 - **Liveness probe:** `GET /api/v1/health` (Returns HTTP 200 `{ status: "healthy" }`)
 - **AI Readiness probe:** `GET /api/v1/ai/status` (Returns availability of Ollama backend without leaking secrets)
+
+---
+
+## 6. Container Deployment with Podman (Local & Production)
+
+FieldQuest provides official multi-stage Containerfiles and a `podman-compose.yml` configuration. This lets you run the exact same stack on **Podman Desktop** locally and on any Linux cloud server.
+
+### Quick Start with Podman Compose:
+
+```bash
+# 1. Build container images
+npm run podman:build
+# or: podman compose build
+
+# 2. Start FieldQuest in the background
+npm run podman:up
+# or: podman compose up -d
+
+# 3. View live logs
+npm run podman:logs
+# or: podman compose logs -f
+
+# 4. Stop containers
+npm run podman:down
+# or: podman compose down
+```
+
+### Accessing the services:
+- **Web App (PWA):** `http://localhost:5173`
+- **Backend API:** `http://localhost:4000` (Health: `http://localhost:4000/api/v1/health`)
+
+### Running with a Local AI Model Container (LocalAI):
+To run a self-hosted CPU/GPU model engine container alongside FieldQuest:
+```bash
+podman compose --profile ai up -d
+```
+This boots `localai/localai:latest-cpu` at `http://localhost:8080`, providing a standard OpenAI-compatible inference endpoint for FieldQuest.
+
