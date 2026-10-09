@@ -104,3 +104,20 @@ export async function exportAllDataAsJSON(): Promise<string> {
   };
   return JSON.stringify(exportPayload, null, 2);
 }
+
+export async function importDataFromJSON(jsonString: string): Promise<{ adventuresCount: number; entriesCount: number }> {
+  const parsed = JSON.parse(jsonString);
+  const adventures = Array.isArray(parsed.adventures) ? parsed.adventures : [];
+  const entries = Array.isArray(parsed.journalEntries) ? parsed.journalEntries : [];
+
+  await db.transaction('rw', db.adventures, db.journalEntries, async () => {
+    for (const adv of adventures) {
+      if (adv.id) await db.adventures.put(adv);
+    }
+    for (const ent of entries) {
+      if (ent.id) await db.journalEntries.put(ent);
+    }
+  });
+
+  return { adventuresCount: adventures.length, entriesCount: entries.length };
+}

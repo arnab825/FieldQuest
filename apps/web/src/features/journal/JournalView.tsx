@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Upload,
+  Image,
 } from 'lucide-react';
 import {
   getAllAdventures,
@@ -17,6 +19,7 @@ import {
   deleteAdventure,
   deleteJournalEntry,
   exportAllDataAsJSON,
+  importDataFromJSON,
   clearAllLocalData,
   JournalEntry,
 } from '../../lib/db.js';
@@ -25,7 +28,7 @@ import { AdventureSessionRecord } from '../../types/index.js';
 export const JournalView: React.FC = () => {
   const [adventures, setAdventures] = useState<AdventureSessionRecord[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
-  const [activeTab, setActiveTab] = useState<'adventures' | 'entries'>('adventures');
+  const [activeTab, setActiveTab] = useState<'adventures' | 'entries' | 'plates'>('adventures');
   const [expandedAdventureId, setExpandedAdventureId] = useState<string | null>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -61,6 +64,20 @@ export const JournalView: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const res = await importDataFromJSON(text);
+      alert(`Successfully restored ${res.adventuresCount} adventures and ${res.entriesCount} observations into your local journal!`);
+      await loadData();
+    } catch {
+      alert('Failed to parse backup JSON file. Please ensure it is a valid FieldQuest export.');
+    }
   };
 
   const handleDeleteAdventure = async (id: string) => {
@@ -101,7 +118,18 @@ export const JournalView: React.FC = () => {
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-2 transition-colors cursor-pointer shadow-xs">
+            <Upload className="w-4 h-4 text-moss-green" />
+            <span>Restore Backup</span>
+            <input
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportFile}
+              className="hidden"
+            />
+          </label>
+
           <button
             onClick={handleExport}
             className="px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
@@ -185,6 +213,18 @@ export const JournalView: React.FC = () => {
           }`}
         >
           Field Notes & Observations ({entries.length})
+        </button>
+
+        <button
+          onClick={() => setActiveTab('plates')}
+          className={`py-3 px-4 font-editorial text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+            activeTab === 'plates'
+              ? 'border-forest-deep text-forest-deep'
+              : 'border-transparent text-text-muted hover:text-forest-deep'
+          }`}
+        >
+          <Image className="w-4 h-4 text-moss-green" />
+          <span>Botanical Field Plates</span>
         </button>
       </div>
 
@@ -402,6 +442,83 @@ export const JournalView: React.FC = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* Content for Botanical Field Plates */}
+      {activeTab === 'plates' && (
+        <div className="space-y-8">
+          {/* Plate 1: Leaf Venation */}
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green block">Field Identification Plate I</span>
+                <h3 className="font-editorial text-2xl font-bold text-forest-deep">Leaf Venation Patterns & Symmetry</h3>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-forest-deep/10 text-forest-deep self-start sm:self-auto">
+                Botanical Morphology
+              </span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm">
+              <img
+                src="/leaf_venation_reference.jpg"
+                alt="Botanical identification chart of leaf venation patterns"
+                className="w-full h-auto object-cover max-h-[500px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">1. Pinnate (Feather-like)</span>
+                <p className="text-text-muted">A prominent central midrib with secondary veins branching laterally (e.g. Oak, Beech, Elm).</p>
+              </div>
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">2. Palmate (Hand-like)</span>
+                <p className="text-text-muted">Multiple primary veins radiating from the leaf base like fingers from a palm (e.g. Maple, Ivy).</p>
+              </div>
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">3. Parallel (Monocot)</span>
+                <p className="text-text-muted">Longitudinal veins running parallel along the leaf blade length (e.g. Grasses, Plantain, Irises).</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Plate 2: Bark & Lichens */}
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border-subtle pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green block">Field Identification Plate II</span>
+                <h3 className="font-editorial text-2xl font-bold text-forest-deep">Tree Bark Textures & Lichen Growth Forms</h3>
+              </div>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-forest-deep/10 text-forest-deep self-start sm:self-auto">
+                Symbiotic Bioindicators
+              </span>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm">
+              <img
+                src="/bark_lichen_reference.jpg"
+                alt="Naturalist reference guide plate illustrating tree bark textures and lichen growth forms"
+                className="w-full h-auto object-cover max-h-[500px]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">Foliose Lichens</span>
+                <p className="text-text-muted">Leaf-like, loosely attached lobed structures with distinct upper and lower surfaces (e.g. Parmelia).</p>
+              </div>
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">Crustose Lichens</span>
+                <p className="text-text-muted">Crust-like patches tightly adhered to rock or bark surfaces, inseparable without damaging substrate.</p>
+              </div>
+              <div className="p-3 rounded-xl bg-parchment-warm/60 border border-border-subtle space-y-1">
+                <span className="font-bold text-forest-deep block">Furrowed Bark Microhabitats</span>
+                <p className="text-text-muted">Deep vertical fissures retain moisture and shelter microscopic invertebrates and moss cushions.</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

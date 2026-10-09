@@ -14,11 +14,14 @@ import {
   Sparkles,
   FileText,
   AlertTriangle,
+  Image,
+  BookOpen,
 } from 'lucide-react';
 import { useAdventureSessionStore } from '../../store/adventure-session.store.js';
 import { ScreenDownOverlay } from './ScreenDownOverlay.js';
 import { SessionSummaryModal } from './SessionSummaryModal.js';
 import { addJournalEntry } from '../../lib/db.js';
+import { playSensoryChime } from '../../lib/audio.js';
 
 export const ActiveAdventureScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -43,6 +46,8 @@ export const ActiveAdventureScreen: React.FC = () => {
   const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [showSummary, setShowSummary] = useState(false);
   const [confirmAbandon, setConfirmAbandon] = useState(false);
+  const [showReferencePlate, setShowReferencePlate] = useState(false);
+  const [referencePlateType, setReferencePlateType] = useState<'venation' | 'bark'>('venation');
 
   // Timer interval
   useEffect(() => {
@@ -59,6 +64,12 @@ export const ActiveAdventureScreen: React.FC = () => {
       const mission = session.missions[currentMissionIndex];
       setNotes(mission.userNotes || '');
       setPhotoUrl(mission.userPhotoUrl || undefined);
+      // Auto-suggest plate based on title
+      if (mission.title.toLowerCase().includes('bark') || mission.title.toLowerCase().includes('lichen')) {
+        setReferencePlateType('bark');
+      } else {
+        setReferencePlateType('venation');
+      }
     }
   }, [session, currentMissionIndex]);
 
@@ -112,6 +123,7 @@ export const ActiveAdventureScreen: React.FC = () => {
   };
 
   const handleCompleteMission = async () => {
+    playSensoryChime();
     await completeCurrentMission(notes, photoUrl);
 
     // Save individual observation entry to IndexedDB journal
@@ -156,6 +168,92 @@ export const ActiveAdventureScreen: React.FC = () => {
           session={session}
           onClose={() => setShowSummary(false)}
         />
+      )}
+
+      {/* Visual Reference Plate Modal */}
+      {showReferencePlate && (
+        <div className="fixed inset-0 z-50 bg-forest-dark/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-2xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => setShowReferencePlate(false)}
+              className="absolute top-4 right-4 p-2 rounded-lg text-text-muted hover:text-forest-deep transition-colors cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="mb-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-moss-green block mb-1">
+                Botanical Field Study Reference
+              </span>
+              <h3 className="font-editorial text-2xl font-bold text-forest-deep">
+                {referencePlateType === 'venation'
+                  ? 'Leaf Venation Patterns (Pinnate, Palmate, Parallel)'
+                  : 'Bark Textures & Lichen Growth Forms'}
+              </h3>
+            </div>
+
+            {/* Toggle Between Plates */}
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setReferencePlateType('venation')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+                  referencePlateType === 'venation'
+                    ? 'bg-forest-deep text-paper-white border-forest-deep'
+                    : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
+                }`}
+              >
+                🌿 Leaf Venation Plate
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReferencePlateType('bark')}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold border transition-colors cursor-pointer ${
+                  referencePlateType === 'bark'
+                    ? 'bg-forest-deep text-paper-white border-forest-deep'
+                    : 'bg-paper-white text-forest-deep border-border-subtle hover:bg-parchment-warm'
+                }`}
+              >
+                🌲 Bark & Lichen Plate
+              </button>
+            </div>
+
+            {/* Reference Image View */}
+            <div className="rounded-2xl overflow-hidden border border-border-subtle mb-4 bg-parchment-warm">
+              <img
+                src={
+                  referencePlateType === 'venation'
+                    ? '/leaf_venation_reference.jpg'
+                    : '/bark_lichen_reference.jpg'
+                }
+                alt="Botanical naturalist identification chart"
+                className="w-full h-auto object-cover max-h-[460px]"
+              />
+            </div>
+
+            <div className="p-3 rounded-xl bg-parchment-warm/70 border border-border-subtle text-xs text-forest-deep/80 space-y-1">
+              <p className="font-semibold text-forest-deep">
+                Naturalist Field Note:
+              </p>
+              <p>
+                {referencePlateType === 'venation'
+                  ? 'Observe living plants without plucking foliage. Compare the central midrib and radiating branching veins. Notice if leaves are monocots (parallel veins) or dicots (branching veins).'
+                  : 'Inspect tree trunk microclimates without peeling bark. Identify foliose (leafy gray-green) or crustose (crust-like) lichens as natural air-quality bioindicators.'}
+              </p>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-border-subtle flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowReferencePlate(false)}
+                className="px-5 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors cursor-pointer"
+              >
+                Return to Observation
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Top Session Status Bar */}
@@ -279,7 +377,7 @@ export const ActiveAdventureScreen: React.FC = () => {
           <h2 className="text-xs font-bold uppercase tracking-wider text-moss-green mb-2">
             What To Look / Listen For
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-3">
             {currentMission.observationCriteria.map((item, idx) => (
               <span
                 key={idx}
@@ -288,6 +386,25 @@ export const ActiveAdventureScreen: React.FC = () => {
                 🔍 {item}
               </span>
             ))}
+          </div>
+
+          {/* Naturalist Identification Reference Plate Trigger */}
+          <div className="p-3.5 rounded-2xl bg-parchment-warm/80 border border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2.5">
+              <BookOpen className="w-5 h-5 text-moss-green shrink-0" />
+              <div>
+                <span className="text-xs font-bold text-forest-deep block">Naturalist Visual Identification Plate</span>
+                <span className="text-[11px] text-text-muted">Study botanical diagrams for leaf venation patterns and bark lichens</span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowReferencePlate(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shadow-xs"
+            >
+              <Image className="w-3.5 h-3.5 text-leaf-accent" />
+              <span>Study Reference Plate</span>
+            </button>
           </div>
         </div>
 
