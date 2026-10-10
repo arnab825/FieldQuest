@@ -43,16 +43,14 @@ export async function fetchAIStatus(
   const query = params.toString() ? `?${params.toString()}` : '';
 
   const base = getApiBaseUrl();
-  if (base) {
-    try {
-      const res = await fetch(`${base}/api/v1/ai/status${query}`);
-      const contentType = res.headers.get('content-type') || '';
-      if (res.ok && contentType.includes('application/json')) {
-        return await res.json();
-      }
-    } catch {
-      // Backend unreachable, attempt direct Ollama connection below if selected
+  try {
+    const res = await fetch(`${base}/api/v1/ai/status${query}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (res.ok && contentType.includes('application/json')) {
+      return await res.json();
     }
+  } catch {
+    // Backend unreachable, attempt direct Ollama connection below if selected
   }
 
   // Direct Browser -> Ollama fallback (enables checking Ollama directly from the web app)

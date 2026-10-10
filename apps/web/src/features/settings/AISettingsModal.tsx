@@ -239,10 +239,12 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
               if (!currentStatus) return null;
               const isAvailable = currentStatus.status === 'available';
               const displayProvider = currentStatus.provider === 'cloud' ? 'Cloud Naturalist' : currentStatus.provider;
-              const displayModel = currentStatus.model || (selectedMode === 'cloud' ? 'gemini-3.8-flash' : ollamaModel);
+              const displayModel = (currentStatus.model && currentStatus.model !== 'unknown')
+                ? currentStatus.model
+                : (selectedMode === 'cloud' ? (selectedCloudService === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-3.8-flash') : ollamaModel);
               return (
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle flex items-center gap-1.5 shadow-2xs">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-600' : 'bg-amber-600'}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-600' : 'bg-emerald-600/70'}`} />
                   <span>Active: {displayProvider} ({displayModel})</span>
                 </span>
               );
