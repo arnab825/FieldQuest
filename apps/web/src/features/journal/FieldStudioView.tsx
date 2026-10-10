@@ -27,6 +27,7 @@ import {
   CustomIllustrationResult,
   BOTANICAL_FIELD_PLATES,
 } from '../../lib/sketch-generator.js';
+import { exportCompositeSpecimenFolio } from '../../lib/folio-exporter.js';
 import {
   getJournalEntries,
   addJournalEntry,
@@ -145,6 +146,35 @@ export const FieldStudioView: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleDownloadFolio = async () => {
+    if (!result) return;
+    const selectedPreset = BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey);
+    await exportCompositeSpecimenFolio({
+      id: `studio-${seed}`,
+      plateNumber: `Studio Plate #${seed.toString().slice(-4)}`,
+      title: subject || 'Botanical Specimen Study',
+      subtitle: `${selectedPreset?.label || 'Naturalist Lithograph'} · Seed #${seed}`,
+      imageSrc: result.url,
+      description:
+        result.promptUsed ||
+        `Botanical specimen illustration rendered in ${selectedPreset?.label || 'Naturalist'} style.`,
+      details: [
+        {
+          title: 'Morphological Key',
+          description: `Observed ${subject.toLowerCase()} structural venation & diagnostic biological adaptations.`,
+        },
+        {
+          title: 'Historical Medium',
+          description: `${selectedPreset?.label || 'Naturalist Lithograph'}: scientific lithography & morphological pigments.`,
+        },
+        {
+          title: 'Archival Specimen',
+          description: `${aspect === 'landscape' ? '800 × 600' : '768 × 768'} specimen render verified client-side.`,
+        },
+      ],
+    });
   };
 
   // Collect existing custom sketches from journal
@@ -449,21 +479,31 @@ export const FieldStudioView: React.FC = () => {
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 w-full sm:w-auto">
                   <button
                     type="button"
+                    onClick={handleDownloadFolio}
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+                    title="Download complete high-res specimen card with title, description, and diagnostic keys"
+                  >
+                    <Download className="w-3.5 h-3.5 text-leaf-accent" />
+                    <span>Download Folio Card</span>
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => window.print()}
-                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                    title="Print archival field plate card (window.print)"
+                    className="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    title="Print archival field plate card or Save as PDF"
                   >
                     <Printer className="w-3.5 h-3.5 text-moss-green" />
-                    <span>Print Folio</span>
+                    <span>PDF / Print</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDownload}
-                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    className="flex-1 sm:flex-initial px-2.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-text-muted hover:text-forest-deep flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs"
+                    title="Download raw image without plate details"
                   >
-                    <Download className="w-3.5 h-3.5 text-moss-green" />
-                    <span>Download PNG</span>
+                    <span>Raw PNG</span>
                   </button>
 
                   <button
@@ -662,14 +702,46 @@ export const FieldStudioView: React.FC = () => {
                   <Sparkles className="w-3.5 h-3.5 text-leaf-accent" />
                   <span>Use as Studio Inspiration ↑</span>
                 </button>
-                <a
-                  href={plate.src}
-                  download={`fieldquest-${plate.id}.jpg`}
-                  className="inline-flex items-center gap-1 text-xs text-text-muted hover:text-forest-deep"
-                >
-                  <Download className="w-3.5 h-3.5 text-moss-green" />
-                  <span>Download Plate</span>
-                </a>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      exportCompositeSpecimenFolio({
+                        id: plate.id,
+                        plateNumber: plate.plateNumber,
+                        title: plate.title,
+                        subtitle: plate.subtitle,
+                        imageSrc: plate.src,
+                        description: plate.description,
+                        details: plate.details,
+                      })
+                    }
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                    title="Download complete high-res specimen card with title, description, and diagnostic keys"
+                  >
+                    <Download className="w-3.5 h-3.5 text-leaf-accent" />
+                    <span>Download Folio Card</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-forest-deep transition-colors cursor-pointer"
+                    title="Print archival field plate or Save as PDF"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-moss-green" />
+                    <span>PDF / Print</span>
+                  </button>
+
+                  <a
+                    href={plate.src}
+                    download={`fieldquest-${plate.id}.jpg`}
+                    className="text-[11px] text-text-muted hover:text-forest-deep px-1.5 py-1 transition-colors"
+                    title="Download raw image file only"
+                  >
+                    Image Only
+                  </a>
+                </div>
               </div>
             </div>
           ))}
