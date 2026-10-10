@@ -45,13 +45,26 @@ FieldQuest is architected as a modular monorepo consisting of:
 [ Express 5 API ]
   ├── Middleware         --> CORS, Rate Limiting, Request Logger, Error Handler
   ├── Services           --> MissionGeneratorService, SafetyValidator
-  └── 3-Tier Provider Abstraction
-        ├── [Tier 1] CloudMissionProvider  --> Google Gemini (1.5 Flash) / Groq Cloud (Llama 3.3)
-        │        └── (Auto-failover on quota limit / 429)
-        ├── [Tier 2] OllamaMissionProvider --> Local Ollama (qwen2.5:3b) on port 11434
-        │        └── (Auto-failover if Ollama is unreachable)
-        └── [Tier 3] DemoMissionProvider   --> Deterministic curated naturalist library (100% offline)
+  └── Multi-Tier Resilience Provider Abstraction
+        ├── [Tiers 1-5] Google Gemini Cluster (2.5-Flash → 2.0-Flash → 2.0-Flash-Lite → 1.5-Flash → 1.5-Flash-8b)
+        ├── [Tiers 6-7] Groq LPU Cluster (Llama 3.3 70B Versatile → Llama 3.1 8B Instant)
+        ├── [Tier 8]   Ollama Local Container (qwen2.5:3b / gemma2:2b on port 11434)
+        └── [Tier 9]   Deterministic Curated Naturalist Library (100% offline air-gapped fallback)
 ```
+
+### 2.1 AI Resilience Matrix (9-Tier Auto-Failover)
+
+| Priority | Engine / Cluster | Target Model / Catalog | Transport | Latency Profile | Fallover Trigger |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Tier 1** | Google Gemini | `gemini-2.5-flash` | REST (Google AI SDK) | ~600ms | Quota / 429 / 5xx |
+| **Tier 2** | Google Gemini | `gemini-2.0-flash` | REST (Google AI SDK) | ~500ms | Model deprecated / 429 |
+| **Tier 3** | Google Gemini | `gemini-2.0-flash-lite` | REST (Google AI SDK) | ~350ms | Rate limit / network error |
+| **Tier 4** | Google Gemini | `gemini-1.5-flash` | REST (Google AI SDK) | ~700ms | Rate limit / model error |
+| **Tier 5** | Google Gemini | `gemini-1.5-flash-8b` | REST (Google AI SDK) | ~350ms | Cluster exhaustion |
+| **Tier 6** | Groq LPU Cloud | `llama-3.3-70b-versatile` | OpenAI-compatible REST | ~280ms (Ultra-fast) | Rate limit / 429 / 5xx |
+| **Tier 7** | Groq LPU Cloud | `llama-3.1-8b-instant` | OpenAI-compatible REST | ~150ms (Ultra-fast) | Groq quota exceeded |
+| **Tier 8** | Local Container | Ollama `qwen2.5:3b` / `gemma2` | Local HTTP (port 11434) | ~1.2s – 2.5s | Ollama daemon offline |
+| **Tier 9** | Air-Gapped Engine | Curated Naturalist Catalog | In-Memory TypeScript | < 1ms (Instant) | Final sovereign fallback |
 
 ---
 

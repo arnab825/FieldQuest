@@ -52,6 +52,12 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     return localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
   });
 
+  // State to toggle custom Ollama endpoint input (defaults to false since localhost:11434 is standard)
+  const [showCustomEndpoint, setShowCustomEndpoint] = useState(() => {
+    const saved = localStorage.getItem('fieldquest_ollama_endpoint');
+    return Boolean(saved && saved !== 'http://localhost:11434');
+  });
+
   // Cloud provider preference state: 'gemini' | 'groq'
   const [selectedCloudService, setSelectedCloudService] = useState<'gemini' | 'groq'>(() => {
     const saved = localStorage.getItem('fieldquest_cloud_service');
@@ -742,154 +748,234 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
           {/* 2B. Ollama / Podman Configuration Area */}
           {selectedMode === 'ollama' && (
-            <div className="p-4 sm:p-5 rounded-2xl border border-border-subtle bg-parchment-warm/50 space-y-4 animate-in fade-in">
-              <div className="flex items-center justify-between pb-1 border-b border-border-subtle/60">
-                <span className="text-xs font-bold text-forest-deep uppercase tracking-wider flex items-center gap-1.5">
-                  <Server className="w-3.5 h-3.5 text-moss-green" />
-                  <span>Ollama / Podman Endpoint & Model</span>
-                </span>
-                <span className="text-[10px] text-text-muted">Port 11434</span>
-              </div>
+            <div className="relative overflow-hidden rounded-2xl border border-forest-deep/15 bg-gradient-to-b from-paper-white via-parchment-warm/25 to-paper-white p-4 sm:p-5 shadow-xs space-y-4 animate-in fade-in">
+              {/* Ambient botanical aura glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-moss-green/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
-              {/* Endpoint Input */}
-              <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
-                  Ollama Host URL:
-                </label>
-                <input
-                  type="text"
-                  value={endpoint}
-                  onChange={e => setEndpoint(e.target.value)}
-                  placeholder="http://localhost:11434"
-                  className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
-                />
-              </div>
-
-              {/* Model Input & Quick Select Chips */}
-              <div>
-                <label className="block text-[11px] font-semibold text-text-muted mb-1">
-                  Active Model Name:
-                </label>
-                <input
-                  type="text"
-                  value={ollamaModel}
-                  onChange={e => setOllamaModel(e.target.value)}
-                  placeholder="qwen2.5:3b"
-                  className="w-full px-3 py-2 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
-                />
-
-                {/* Popular Models Chips with Installed vs Needs Download Badges */}
-                <div className="space-y-2 mt-2">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] text-text-muted mr-1">Presets:</span>
-                    {popularOllamaModels.map(m => {
-                      const isPresetInstalled = isModelInstalled(m.id);
-                      const isSelected = ollamaModel === m.id;
-
-                      return (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => setOllamaModel(m.id)}
-                          className={`text-[10px] px-2.5 py-1 rounded-lg border font-mono transition-all cursor-pointer flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'border-forest-deep bg-forest-deep text-paper-white shadow-2xs font-semibold'
-                              : 'border-border-subtle bg-paper-white text-forest-deep hover:bg-parchment-warm'
-                          }`}
-                          title={
-                            isPresetInstalled
-                              ? `${m.note} (Already downloaded in Podman container)`
-                              : `${m.note} (Requires download via Podman)`
-                          }
-                        >
-                          <span>{m.name}</span>
-                          {isPresetInstalled ? (
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                isSelected ? 'bg-leaf-accent' : 'bg-emerald-500'
-                              }`}
-                              title="Ready in Podman container"
-                            />
-                          ) : (
-                            <span
-                              className={`text-[8px] uppercase tracking-wider px-1 py-0.2 rounded font-sans font-bold ${
-                                isSelected ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
-                              }`}
-                              title="Requires podman pull"
-                            >
-                              pull
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+              {/* 1. Header: Container Runtime Identity & Status */}
+              <div className="flex items-center justify-between flex-wrap gap-2.5 relative z-10 pb-3 border-b border-border-subtle/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-forest-deep text-leaf-accent flex items-center justify-center shadow-xs ring-1 ring-forest-deep/20 shrink-0">
+                    <Server className="w-5 h-5 text-leaf-accent" />
                   </div>
+                  <div>
+                    <h4 className="font-editorial text-base sm:text-lg font-bold text-forest-deep leading-tight">
+                      Local AI Container Engine
+                    </h4>
+                    <p className="text-[11px] text-text-muted">
+                      100% Offline • Zero-Network Privacy • Containerized Podman / Ollama Runtime
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Visual Instruction: If selected model requires Podman download */}
-                  {!isCurrentModelInstalled && (
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2 animate-in fade-in">
-                      <div className="flex items-center gap-1.5 text-amber-950 font-bold">
-                        <Download className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                        <span>Download "{ollamaModel}" using Podman</span>
-                      </div>
-                      <p className="text-[11px] text-amber-800 leading-relaxed">
-                        This model is not yet downloaded inside your container. Run this command in your PowerShell/terminal:
-                      </p>
-                      <div className="flex items-center justify-between p-2 rounded-lg bg-forest-deep text-leaf-accent font-mono text-[11px] shadow-2xs">
-                        <span className="overflow-x-auto scrollbar-none pr-2">
-                          podman exec -it fieldquest-ai ollama pull {ollamaModel}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${ollamaModel}`)}
-                          className="p-1 hover:bg-white/10 rounded cursor-pointer text-paper-white shrink-0"
-                          title="Copy Podman pull command"
-                        >
-                          {copiedCommand ? <Check className="w-3.5 h-3.5 text-leaf-accent" /> : <Copy className="w-3.5 h-3.5" />}
-                        </button>
-                      </div>
-                      {installedList.length > 0 && (
-                        <div className="text-[11px] text-amber-900 flex flex-wrap items-center gap-1 pt-0.5">
-                          <span>Or use currently downloaded model:</span>
-                          {installedList.map(mName => (
-                            <button
-                              key={mName}
-                              type="button"
-                              onClick={() => setOllamaModel(mName)}
-                              className="underline font-bold text-forest-deep hover:text-emerald-800 cursor-pointer"
-                            >
-                              ✓ {mName} (Ready)
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* If selected model is installed and ready */}
-                  {isCurrentModelInstalled && installedList.length > 0 && (
-                    <div className="p-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-950 flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
-                        <span>
-                          Model <code className="font-mono font-bold bg-white/70 px-1 py-0.5 rounded text-emerald-900">{ollamaModel}</code> is downloaded & ready in Podman.
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
-                        Ready
-                      </span>
-                    </div>
-                  )}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                    </span>
+                    <span className="text-[10px] font-bold tracking-tight">Container Ready</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-text-muted bg-paper-white px-2 py-0.5 rounded-full border border-border-subtle">
+                    Port 11434
+                  </span>
                 </div>
               </div>
 
-              {/* Test Connection Button */}
+              {/* 2. Hero Active Model Spotlight (Sleek Dark Forest Container Card) */}
+              <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-forest-deep via-[#102C25] to-forest-deep p-4 text-paper-white shadow-md border border-forest-deep/40 z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-leaf-accent uppercase">
+                      <Sparkles className="w-3 h-3 text-leaf-accent" />
+                      <span>Tier 1 Local Inference • On-Device Runtime</span>
+                    </div>
+                    <div className="flex items-center gap-2.5 flex-wrap">
+                      <span className="font-mono text-base sm:text-lg font-bold tracking-wide text-paper-white">
+                        {ollamaModel}
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-leaf-accent/20 text-leaf-accent border border-leaf-accent/30 flex items-center gap-1">
+                        <Shield className="w-2.5 h-2.5" />
+                        <span>100% Private &amp; Air-Gapped</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <div className="px-3 py-1.5 rounded-lg bg-paper-white/10 backdrop-blur-xs border border-paper-white/10 text-left sm:text-right">
+                      <span className="text-[9px] uppercase tracking-wider text-paper-white/70 block">Container Status</span>
+                      <span className="text-xs font-bold text-leaf-accent font-mono">
+                        {isCurrentModelInstalled ? 'Downloaded & Ready' : 'Download Needed'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Curated Open-Weight Models Grid */}
+              <div className="space-y-2 relative z-10 pt-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-forest-deep flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-moss-green" />
+                    <span>Select Open-Weight Model Fleet</span>
+                  </span>
+                  <span className="text-[10px] text-text-muted font-medium">
+                    Zero Rate Limits
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {popularOllamaModels.map(m => {
+                    const isPresetInstalled = isModelInstalled(m.id);
+                    const isSelected = ollamaModel === m.id;
+
+                    return (
+                      <div
+                        key={m.id}
+                        onClick={() => setOllamaModel(m.id)}
+                        className={`p-3 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                          isSelected
+                            ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                            : 'border-border-subtle bg-paper-white hover:border-moss-green/40 text-forest-deep'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-mono text-xs font-bold truncate">
+                            {m.name}
+                          </span>
+                          {isPresetInstalled ? (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0 ${
+                              isSelected ? 'bg-leaf-accent/20 text-leaf-accent' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-leaf-accent' : 'bg-emerald-600'}`} />
+                              <span>Downloaded</span>
+                            </span>
+                          ) : (
+                            <span className={`text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded font-bold shrink-0 ${
+                              isSelected ? 'bg-paper-white/20 text-paper-white' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              Requires Pull
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[10px] leading-tight ${isSelected ? 'text-paper-white/80' : 'text-text-muted'}`}>
+                          {m.note}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Model Input (Subtle & Inline) */}
+                <div className="pt-1">
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-wider whitespace-nowrap">
+                      Custom Model Tag:
+                    </label>
+                    <input
+                      type="text"
+                      value={ollamaModel}
+                      onChange={e => setOllamaModel(e.target.value)}
+                      placeholder="e.g. qwen2.5:3b, deepseek-r1:1.5b"
+                      className="flex-1 px-3 py-1.5 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
+                    />
+                  </div>
+                </div>
+
+                {/* Visual Instruction: If selected model requires Podman download */}
+                {!isCurrentModelInstalled && (
+                  <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs space-y-2 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 text-amber-950 font-bold">
+                      <Download className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                      <span>Download "{ollamaModel}" into Podman container</span>
+                    </div>
+                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                      Run this command once in your terminal to cache the weights offline:
+                    </p>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-forest-deep text-leaf-accent font-mono text-[11px] shadow-2xs">
+                      <span className="overflow-x-auto scrollbar-none pr-2">
+                        podman exec -it fieldquest-ai ollama pull {ollamaModel}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(`podman exec -it fieldquest-ai ollama pull ${ollamaModel}`)}
+                        className="p-1 hover:bg-white/10 rounded cursor-pointer text-paper-white shrink-0"
+                        title="Copy pull command"
+                      >
+                        {copiedCommand ? <Check className="w-3.5 h-3.5 text-leaf-accent" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                    {installedList.length > 0 && (
+                      <div className="text-[11px] text-amber-900 flex flex-wrap items-center gap-1 pt-0.5">
+                        <span>Or select a currently downloaded model:</span>
+                        {installedList.map(mName => (
+                          <button
+                            key={mName}
+                            type="button"
+                            onClick={() => setOllamaModel(mName)}
+                            className="underline font-bold text-forest-deep hover:text-emerald-800 cursor-pointer"
+                          >
+                            ✓ {mName} (Ready)
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 4. Streamlined Container Endpoint Bar (Discreet with Edit Toggle) */}
+              <div className="p-3 rounded-xl bg-forest-deep/5 border border-forest-deep/10 space-y-2 z-10 relative">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                    <span className="text-[11px] font-mono text-forest-deep">
+                      Daemon Endpoint: <span className="font-bold">{endpoint}</span>
+                    </span>
+                    <span className="text-[10px] text-text-muted font-sans">(Default Standard Port)</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomEndpoint(!showCustomEndpoint)}
+                    className="text-[11px] font-bold text-forest-deep hover:text-moss-green hover:underline cursor-pointer"
+                  >
+                    {showCustomEndpoint ? 'Close Editor' : 'Edit Endpoint'}
+                  </button>
+                </div>
+
+                {showCustomEndpoint && (
+                  <div className="pt-2 border-t border-border-subtle/50 space-y-1.5 animate-in fade-in">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                      Custom Ollama Daemon Host URL:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={endpoint}
+                        onChange={e => setEndpoint(e.target.value)}
+                        placeholder="http://localhost:11434"
+                        className="flex-1 px-3 py-1.5 rounded-xl border border-border-subtle bg-paper-white text-xs font-mono text-forest-deep focus:outline-none focus:border-forest-deep"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setEndpoint('http://localhost:11434')}
+                        className="px-2.5 py-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-[11px] font-semibold text-text-muted"
+                      >
+                        Reset Default
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 5. Test Connection & Save Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <button
                   type="button"
                   disabled={isTesting}
                   onClick={handleTestConnection}
-                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-xs"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
                   <span>{isTesting ? 'Testing Connection...' : 'Test Connection'}</span>
@@ -903,7 +989,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   {savedSuccess ? (
                     <>
                       <Check className="w-3.5 h-3.5 text-emerald-700" />
-                      <span className="text-emerald-700 font-bold">Settings Saved!</span>
+                      <span className="text-emerald-700 font-bold">Preferences Saved!</span>
                     </>
                   ) : (
                     <span>Save Preference</span>
@@ -911,10 +997,10 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 </button>
               </div>
 
-              {/* Test Result Feedback Box */}
+              {/* 6. Test Result Feedback Box */}
               {testResult && (
                 <div
-                  className={`p-3 rounded-xl text-xs space-y-1.5 border animate-in fade-in ${
+                  className={`p-3.5 rounded-xl text-xs space-y-1.5 border animate-in fade-in ${
                     testResult.status === 'available'
                       ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
                       : 'bg-amber-50 border-amber-200 text-amber-950'

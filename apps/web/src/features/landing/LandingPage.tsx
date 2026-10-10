@@ -8,9 +8,9 @@ import {
   Smartphone,
   ArrowRight,
   CheckCircle2,
-  Brain,
   Volume2,
   TreePine,
+  BookOpen,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -36,26 +36,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
           </h1>
 
           {/* Subtitle */}
-          <p className="text-sm sm:text-lg md:text-xl text-forest-deep/80 max-w-2xl mx-auto leading-relaxed mb-8 sm:mb-10 font-normal px-1">
-            Exchange notification fatigue for living biodiversity. FieldQuest generates sensory observation quests tailored to your time, street, and local flora—powered by private, open-weight AI.
+          <p className="text-sm sm:text-base md:text-lg text-forest-deep/80 max-w-2xl mx-auto leading-relaxed mb-6 sm:mb-8 font-normal px-2">
+            Exchange notification fatigue for living biodiversity. FieldQuest generates sensory observation quests tailored to your time, street, and local flora—powered by hybrid multi-cloud &amp; on-device AI.
           </p>
 
-          {/* Call to Actions */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 max-w-md mx-auto mb-8 sm:mb-10 w-full">
+          {/* Call to Actions - Perfectly Proportioned Luxury Pill CTAs */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto mb-8 sm:mb-10 w-full px-4">
             <Link
               to="/setup"
-              className="w-full sm:w-auto px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl bg-forest-deep text-paper-white font-medium text-sm sm:text-base shadow-md hover:bg-forest-dark hover:shadow-lg transition-all flex items-center justify-center gap-2.5 group cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 rounded-full bg-forest-deep text-paper-white font-semibold text-sm shadow-md hover:bg-forest-dark hover:shadow-lg transition-all group cursor-pointer whitespace-nowrap active:scale-[0.98]"
             >
-              <Compass className="w-5 h-5 text-leaf-accent group-hover:rotate-45 transition-transform shrink-0" />
+              <Compass className="w-4 h-4 text-leaf-accent group-hover:rotate-45 transition-transform shrink-0" />
               <span>Begin An Adventure</span>
-              <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-1.5 transition-transform shrink-0" />
+              <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-1 transition-transform shrink-0" />
             </Link>
 
             <button
               onClick={onOpenObjectiveBasis}
-              className="w-full sm:w-auto px-5 sm:px-6 py-3.5 sm:py-4 rounded-xl bg-paper-white border border-border-subtle text-forest-deep font-semibold text-xs sm:text-sm hover:bg-parchment-warm transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-full bg-paper-white/90 border border-border-subtle/80 text-forest-deep font-semibold text-sm hover:bg-paper-white hover:border-moss-green/40 transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-[0.98]"
             >
-              <Compass className="w-4 h-4 text-moss-green shrink-0" />
+              <BookOpen className="w-4 h-4 text-moss-green shrink-0" />
               <span>Our Philosophy</span>
             </button>
           </div>
@@ -73,19 +73,78 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
             </div>
           </div>
 
-          {/* Quick Value Props */}
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-10 text-[11px] sm:text-xs text-forest-deep/75">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>No Accounts Required</span>
+          {/* Quick Value Props - Atelier Botanical Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 max-w-4xl mx-auto text-left mt-2">
+            {/* Value Prop 1: Sovereign Privacy */}
+            <div className="group relative bg-paper-white/85 hover:bg-paper-white backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-forest-deep/10 hover:border-moss-green/40 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-forest-deep/8 group-hover:bg-forest-deep text-forest-deep group-hover:text-leaf-accent flex items-center justify-center transition-colors">
+                    <Shield className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                    Zero Cloud Data
+                  </span>
+                </div>
+                <h3 className="font-editorial text-sm sm:text-base font-bold text-forest-deep mb-1">
+                  No Accounts Required
+                </h3>
+                <p className="text-[11px] sm:text-xs text-forest-deep/75 leading-relaxed">
+                  No signups, passwords, tracking cookies, or email collection. All journal logs, field sketches, and biological observations remain exclusively on your device.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-border-subtle/80 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-800">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span>IndexedDB Private Vault</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>100% Offline Capable</span>
+
+            {/* Value Prop 2: Autonomous Offline Engine */}
+            <div className="group relative bg-paper-white/85 hover:bg-paper-white backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-forest-deep/10 hover:border-moss-green/40 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-forest-deep/8 group-hover:bg-forest-deep text-forest-deep group-hover:text-leaf-accent flex items-center justify-center transition-colors">
+                    <Compass className="w-4 h-4 shrink-0 transition-transform group-hover:rotate-45" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-50 text-amber-900 border border-amber-200/60">
+                    Air-Gapped PWA
+                  </span>
+                </div>
+                <h3 className="font-editorial text-sm sm:text-base font-bold text-forest-deep mb-1">
+                  100% Offline Capable
+                </h3>
+                <p className="text-[11px] sm:text-xs text-forest-deep/75 leading-relaxed">
+                  Engineered with service-worker caching and deterministic fallback models. Operates seamlessly deep in remote backcountry trails with zero cell reception.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-border-subtle/80 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-800">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span>Zero Cellular Signal Needed</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>Screen-Down Friendly</span>
+
+            {/* Value Prop 3: Attention Restoration */}
+            <div className="group relative bg-paper-white/85 hover:bg-paper-white backdrop-blur-sm rounded-2xl p-4 sm:p-5 border border-forest-deep/10 hover:border-moss-green/40 shadow-xs hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-8 h-8 rounded-xl bg-forest-deep/8 group-hover:bg-forest-deep text-forest-deep group-hover:text-leaf-accent flex items-center justify-center transition-colors">
+                    <Eye className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-forest-deep/5 text-forest-deep border border-forest-deep/10">
+                    Quiet Tech
+                  </span>
+                </div>
+                <h3 className="font-editorial text-sm sm:text-base font-bold text-forest-deep mb-1">
+                  Screen-Down Friendly
+                </h3>
+                <p className="text-[11px] sm:text-xs text-forest-deep/75 leading-relaxed">
+                  Pocket-first design with audio cues and observational prompts. Crafted to pull your eyes away from the screen and back toward the living canopy.
+                </p>
+              </div>
+              <div className="mt-3.5 pt-2.5 border-t border-border-subtle/80 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-semibold text-emerald-800">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <span>Attention Restoration Mode</span>
+              </div>
             </div>
           </div>
         </div>
@@ -273,22 +332,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
           </div>
         </div>
 
-        <div className="mt-10 sm:mt-14 text-center flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full">
+        <div className="mt-10 sm:mt-14 text-center flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto w-full px-4">
           <Link
             to="/setup"
-            className="w-full sm:w-auto group inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-xl bg-forest-deep text-paper-white text-xs sm:text-sm font-medium hover:bg-forest-dark transition-all shadow-md hover:shadow-lg cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 sm:px-7 py-3 rounded-full bg-forest-deep text-paper-white text-sm font-semibold hover:bg-forest-dark transition-all shadow-md hover:shadow-lg cursor-pointer whitespace-nowrap group active:scale-[0.98]"
           >
             <Eye className="w-4 h-4 text-leaf-accent group-hover:scale-110 transition-transform shrink-0" />
             <span>Create Your First Quest</span>
-            <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-2 transition-transform shrink-0" />
+            <ArrowRight className="w-4 h-4 text-leaf-accent animate-pulse-arrow group-hover:translate-x-1 transition-transform shrink-0" />
           </Link>
 
           <button
             onClick={onOpenObjectiveBasis}
-            className="w-full sm:w-auto px-5 sm:px-6 py-3.5 rounded-xl border border-border-subtle bg-paper-white text-forest-deep font-semibold text-xs hover:bg-parchment-warm transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-full border border-border-subtle/80 bg-paper-white/90 text-forest-deep font-semibold text-sm hover:bg-paper-white hover:border-moss-green/40 transition-all cursor-pointer shadow-2xs whitespace-nowrap active:scale-[0.98]"
           >
-            <Brain className="w-4 h-4 text-moss-green shrink-0" />
-            <span>Philosophy & Science</span>
+            <BookOpen className="w-4 h-4 text-moss-green shrink-0" />
+            <span>Philosophy &amp; Science</span>
           </button>
         </div>
       </section>

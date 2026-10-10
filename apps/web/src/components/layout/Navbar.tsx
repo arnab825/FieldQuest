@@ -21,7 +21,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isJournalNotesTab = location.pathname === '/journal';
 
   return (
-    <header className="sticky top-0 z-40 bg-paper-white/95 backdrop-blur-md border-b border-border-subtle shadow-xs">
+    <header className="sticky top-0 z-40 w-full bg-paper-white/95 backdrop-blur-md border-b border-border-subtle shadow-xs">
       <div className="max-w-6xl mx-auto px-3 sm:px-6 h-16 flex items-center justify-between gap-2">
         {/* Brand / Logo */}
         <Link to="/" className="flex items-center gap-2 group shrink-0">

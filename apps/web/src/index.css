@@ -26,7 +26,7 @@
   }
 
   html, body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100vw;
   }
 
@@ -159,6 +159,18 @@
 
 .animate-pulse-arrow {
   animation: pulseArrow 1.3s ease-in-out infinite;
+}
+
+/* Herbarium Field Folio Print Layout */
+@media print {
+  header, nav, footer, button, .no-print {
+    display: none !important;
+  }
+  body {
+    background: #ffffff !important;
+    color: #173d32 !important;
+    padding: 0 !important;
+  }
 }
 
 

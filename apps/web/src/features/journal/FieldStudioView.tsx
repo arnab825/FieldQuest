@@ -18,6 +18,7 @@ import {
   RectangleHorizontal,
   Square,
   Compass,
+  Printer,
 } from 'lucide-react';
 import {
   BOTANICAL_STYLE_PRESETS,
@@ -59,6 +60,20 @@ export const FieldStudioView: React.FC = () => {
   const [result, setResult] = useState<CustomIllustrationResult | null>(null);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [loupeActive, setLoupeActive] = useState(true);
+  const [isHoveringPlate, setIsHoveringPlate] = useState(false);
+  const [loupePos, setLoupePos] = useState({ x: 0, y: 0, percentX: 50, percentY: 50 });
+  const plateContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePlateMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!plateContainerRef.current) return;
+    const rect = plateContainerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const percentX = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    const percentY = Math.max(0, Math.min(100, (y / rect.height) * 100));
+    setLoupePos({ x, y, percentX, percentY });
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -330,15 +345,40 @@ export const FieldStudioView: React.FC = () => {
                     Studio Artboard Canvas
                   </span>
                 </div>
-                {result && (
-                  <span className="text-[11px] font-semibold text-moss-green bg-forest-deep/10 px-2.5 py-0.5 rounded-full">
-                    {BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey)?.label || 'Naturalist Lithograph'}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {result && (
+                    <button
+                      type="button"
+                      onClick={() => setLoupeActive(!loupeActive)}
+                      className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border transition-all cursor-pointer ${
+                        loupeActive
+                          ? 'bg-amber-100/90 text-amber-900 border-amber-300 shadow-2xs'
+                          : 'bg-paper-white text-text-muted border-border-subtle hover:bg-parchment-warm'
+                      }`}
+                      title="Toggle interactive Victorian magnifying loupe"
+                    >
+                      <Microscope className="w-3 h-3 text-amber-700" />
+                      <span>{loupeActive ? '2.5× Loupe Active' : 'Enable Loupe'}</span>
+                    </button>
+                  )}
+                  {result && (
+                    <span className="text-[11px] font-semibold text-moss-green bg-forest-deep/10 px-2.5 py-0.5 rounded-full">
+                      {BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey)?.label || 'Naturalist Lithograph'}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Artwork Display */}
-              <div className="rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm/80 min-h-[300px] flex items-center justify-center relative shadow-inner">
+              <div
+                ref={plateContainerRef}
+                onMouseMove={handlePlateMouseMove}
+                onMouseEnter={() => setIsHoveringPlate(true)}
+                onMouseLeave={() => setIsHoveringPlate(false)}
+                className={`rounded-2xl overflow-hidden border border-border-subtle bg-parchment-warm/80 min-h-[300px] flex items-center justify-center relative shadow-inner select-none ${
+                  result && loupeActive ? 'cursor-crosshair' : ''
+                }`}
+              >
                 {isGenerating ? (
                   <div className="text-center p-8 space-y-3">
                     <Sparkles className="w-10 h-10 text-moss-green animate-spin mx-auto" />
@@ -350,11 +390,41 @@ export const FieldStudioView: React.FC = () => {
                     </p>
                   </div>
                 ) : result ? (
-                  <img
-                    src={result.url}
-                    alt={subject}
-                    className="w-full h-auto max-h-[520px] object-contain transition-transform duration-300"
-                  />
+                  <>
+                    <img
+                      src={result.url}
+                      alt={subject}
+                      className="w-full h-auto max-h-[520px] object-contain transition-transform duration-300 pointer-events-none"
+                    />
+
+                    {/* Interactive Victorian Naturalist Loupe (Magnifying Glass) */}
+                    {loupeActive && isHoveringPlate && (
+                      <div
+                        className="pointer-events-none absolute w-32 h-32 sm:w-36 sm:h-36 rounded-full border-[3.5px] border-amber-700/90 shadow-2xl overflow-hidden z-30 -translate-x-1/2 -translate-y-1/2 ring-2 ring-amber-900/40 bg-parchment-warm"
+                        style={{
+                          left: `${loupePos.x}px`,
+                          top: `${loupePos.y}px`,
+                          backgroundImage: `url(${result.url})`,
+                          backgroundPosition: `${loupePos.percentX}% ${loupePos.percentY}%`,
+                          backgroundSize: '280%',
+                          backgroundRepeat: 'no-repeat',
+                          boxShadow: 'inset 0 0 16px rgba(45,25,10,0.5), 0 16px 32px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        {/* Lens specular glare reflection */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/30" />
+                        {/* Brass reticle center pip */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-800/60 shadow-xs" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subtle helper hint */}
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-forest-deep/60 backdrop-blur-xs text-[10px] text-paper-white/90 pointer-events-none hidden sm:block">
+                      Hover to magnify specimen (2.5×)
+                    </div>
+                  </>
                 ) : (
                   <div className="text-center p-8 space-y-3 max-w-sm">
                     <Palette className="w-12 h-12 text-moss-green/60 mx-auto" />
@@ -377,6 +447,16 @@ export const FieldStudioView: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    title="Print archival field plate card (window.print)"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-moss-green" />
+                    <span>Print Folio</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handleDownload}
