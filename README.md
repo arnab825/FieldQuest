@@ -102,8 +102,8 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/TRD.md](docs/TRD.md) 
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/fieldquest/fieldquest.git
-cd fieldquest
+git clone https://github.com/arnab825/FieldQuest.git
+cd FieldQuest
 
 # 2. Install workspace dependencies
 npm install
@@ -115,20 +115,36 @@ cp .env.example .env
 ### Environment Variables (`.env`)
 
 ```env
+# Backend Server Configuration
 PORT=4000
 NODE_ENV=development
 CLIENT_ORIGIN=http://localhost:5173
 
-# AI Inference Engine Configuration
+# AI Inference Engine Configuration ('cloud' | 'ollama' | 'demo')
 AI_PROVIDER=cloud
+CLOUD_PROVIDER=gemini
+
+# Google Gemini Multi-Model Cluster (Free Tier)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODEL=gemini-3.8-flash
+GEMINI_MODELS=gemini-3.8-flash,gemini-3.1-flash-lite,gemini-flash-latest,gemini-flash-lite-latest
+
+# Groq Cloud Ultra-Fast LPU Cluster (Free Tier)
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODELS=llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-120b
+
+# Local Ollama AI Engine (Air-Gapped Failover)
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=qwen2.5:3b
+OLLAMA_TIMEOUT_MS=45000
 
-# Production Cloud AI Keys (Optional Free Tier: Google Gemini / Groq)
-# When provided, Cloud Naturalist Engine runs via real-time cloud models.
-# If cloud capacity is exhausted or offline, it automatically fails over to local Ollama!
-GEMINI_API_KEY=your_gemini_api_key_here
-GROQ_API_KEY=your_groq_api_key_here
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=60
+
+# Web Frontend Configuration (apps/web)
+VITE_API_BASE_URL=http://localhost:4000
 ```
 
 ---
