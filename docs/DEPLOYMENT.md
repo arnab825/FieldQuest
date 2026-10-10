@@ -32,12 +32,12 @@ FieldQuest's architecture intentionally decouples the client PWA from the backen
 
 ## 2. Deployment Scenarios
 
-### Scenario A: Production Cloud AI (Zero GPU Setup, Free Tier)
-- **Frontend:** Hosted on Vercel, Cloudflare Pages, or Netlify.
-- **Backend:** Hosted on Render, Railway, Fly.io, or VPS.
-- **AI Engine:** Google Gemini (1.5 Flash / 2.0 Flash) or Groq Cloud (Llama 3.3 / Qwen 2.5) free-tier API keys stored safely in backend environment variables (`GEMINI_API_KEY` / `GROQ_API_KEY`).
-- **Failover:** Automatic fallback to local Ollama (if active) and Curated Field Library if quotas are hit.
-- **Advantage:** Production-ready real AI for all website visitors with zero GPU costs, zero local model downloads, and zero client setup.
+### Scenario A: Production Cloud AI (Netlify + Render + GitHub) — *Recommended*
+- **Frontend PWA:** Deployed on **Netlify** using [`netlify.toml`](file:///d:/hacktoberfest/FieldQuest/netlify.toml) and [`_redirects`](file:///d:/hacktoberfest/FieldQuest/apps/web/public/_redirects).
+- **Backend API:** Deployed on **Render** (Free Tier Web Service) using [`render.yaml`](file:///d:/hacktoberfest/FieldQuest/render.yaml).
+- **CI/CD:** Automated verification via **GitHub Actions** on push and pull request.
+- **AI Engine:** Google Gemini (2.5/2.0/1.5 Flash) + Groq Cloud (Llama 3.3 70B) free-tier keys stored in Render environment variables.
+- **Failover:** Automatic cascading failover to Curated Naturalist Catalog if quotas are reached. Zero GPU required, 100% uptime.
 
 ### Scenario B: Full Sovereign Self-Hosted Stack with Local AI
 - **Frontend & Backend:** Deployed on a single machine or VPS (e.g. Ubuntu with 8GB RAM + NVIDIA GPU or modern multi-core CPU).
@@ -47,6 +47,69 @@ FieldQuest's architecture intentionally decouples the client PWA from the backen
 ### Scenario C: Static / Offline Demonstration Mode
 - **Configuration:** Set `AI_PROVIDER=demo` in `.env`.
 - **Advantage:** 100% offline, zero network or LLM dependencies, guaranteed instant responses.
+
+---
+
+## 3. Step-by-Step Production Deployments
+
+### 3.1 Deploying Frontend to Netlify
+
+FieldQuest comes pre-configured with [`netlify.toml`](file:///d:/hacktoberfest/FieldQuest/netlify.toml) and [`apps/web/public/_redirects`](file:///d:/hacktoberfest/FieldQuest/apps/web/public/_redirects) for clean client-side routing.
+
+1. **Import Repository in Netlify**:
+   - Go to [Netlify Dashboard](https://app.netlify.com) → **Add new site** → **Import an existing project** → Connect your GitHub repository.
+2. **Configure Build Settings**:
+   - **Base directory:** *(leave empty or `/`)*
+   - **Build command:** `npm run build:web`
+   - **Publish directory:** `apps/web/dist`
+3. **Environment Variables**:
+   - Set `VITE_API_BASE_URL` to your live Render backend URL (e.g., `https://fieldquest-api.onrender.com`).
+4. **Deploy**:
+   - Click **Deploy Site**. Netlify will build the PWA bundle, register service workers, and serve assets through their global edge CDN.
+
+---
+
+### 3.2 Deploying Backend API to Render
+
+You can deploy using the automated Render Blueprint ([`render.yaml`](file:///d:/hacktoberfest/FieldQuest/render.yaml)) or manually:
+
+#### Method A: Automated via Render Blueprint
+1. In [Render Dashboard](https://dashboard.render.com), click **New +** → **Blueprint**.
+2. Select your `FieldQuest` repository. Render will automatically parse [`render.yaml`](file:///d:/hacktoberfest/FieldQuest/render.yaml).
+3. Fill in secret variables:
+   - `GEMINI_API_KEY`: *(your Google AI Studio key)*
+   - `GROQ_API_KEY`: *(your Groq Cloud API key)*
+   - `CLIENT_ORIGIN`: `https://your-site.netlify.app`
+4. Click **Apply**.
+
+#### Method B: Manual Web Service Setup
+1. In Render Dashboard, click **New +** → **Web Service**.
+2. Connect your GitHub repository and set:
+   - **Name:** `fieldquest-api`
+   - **Runtime:** `Node`
+   - **Build Command:** `npm ci && npm run build:api`
+   - **Start Command:** `node apps/api/dist/server.js`
+   - **Health Check Path:** `/api/v1/health`
+3. **Add Environment Variables**:
+   - `NODE_ENV`: `production`
+   - `PORT`: `10000` *(Render sets this automatically)*
+   - `AI_PROVIDER`: `cloud`
+   - `CLOUD_PROVIDER`: `gemini`
+   - `GEMINI_API_KEY`: *(your key)*
+   - `GROQ_API_KEY`: *(your key)*
+   - `CLIENT_ORIGIN`: `https://your-site.netlify.app` *(or comma-separated URLs)*
+4. Click **Create Web Service**. Once healthy, copy your service URL and add it as `VITE_API_BASE_URL` on Netlify.
+
+---
+
+### 3.3 GitHub Actions CI/CD
+
+FieldQuest includes an automated CI workflow at [`.github/workflows/ci.yml`](file:///d:/hacktoberfest/FieldQuest/.github/workflows/ci.yml):
+- Executes on every `push` and `pull_request` to `main` / `master`.
+- Automatically validates:
+  1. `npm run typecheck` (strict TypeScript validation across all workspaces)
+  2. `npm test` (Vitest unit and provider failover suites)
+  3. `npm run build` (production asset compilation check)
 
 ---
 

@@ -21,10 +21,13 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 ## Key Features
 
 - 🍃 **Context-Aware Nature Missions:** Generates tailored 15, 30, or 60-minute observational quests based on your environment, interests, difficulty, and time.
-- ☁️ **Cloud Naturalist Engine (Production AI):** Powered by free-tier production cloud models (Google Gemini 1.5 Flash & Groq Cloud Llama 3.3). Zero GPU or local installation required, zero client credentials needed.
-- 🔄 **Automatic 3-Tier Failover Pipeline:** If cloud quotas are exhausted or offline, requests seamlessly fail over to **Local AI (Ollama)** if running, and gracefully to our **Curated Field Log Engine**, guaranteeing zero downtime.
+- ☁️ **Cloud Naturalist Engine (Production AI):** Powered by free-tier production cloud models (Google Gemini 2.5/2.0/1.5 Flash & Groq Cloud Llama 3.3 70B). Zero GPU or local installation required, zero client credentials needed.
+- 🔄 **9-Tier Resilience Matrix:** Seamless cascading failover across Google Gemini cluster (`gemini-2.5-flash` down to `gemini-1.5-flash-8b`), Groq LPU cluster (`llama-3.3-70b-versatile` & `llama-3.1-8b-instant`), local Ollama container, and our zero-dependency Curated Field Library, guaranteeing 100% uptime.
 - 🎨 **Creative Field Studio (`/studio`):** An interactive botanical illustration workshop to sketch wild specimens, experiment with historical scientific art styles (*Vintage Naturalist Lithograph*, *Microscopic Anatomy*, *Pressed Herbarium Specimen*, *Field Graphite Pencil*), randomize seeds, and download high-resolution diagnostic plates.
-- 🌿 **Classical Herbarium Folios & Inline Reference Drawer:** 7 curated anatomical reference plates (Venation, Bark, Margins, Conifers, Ferns, Lichens, Seeds) with morphological diagnostic keys, expandable directly inline within each journal observation card without disruptive modals or redirects.
+- 🔍 **Interactive Victorian Naturalist Loupe:** A hardware-accelerated 2.8× optical magnifying glass for inspecting fine leaf venation, spore structures, and pen-and-ink lithographic hatching directly on specimen artboards.
+- 📜 **Archival Folio Composite Exporter:** High-resolution 1200 × 1580 composite PNG generator (HTML5 Canvas 2D, zero dependencies) rendering botanical plates framed with ornamental borders, titles, descriptions, and 3 diagnostic key cards.
+- 🖨️ **Single-Card Dedicated PDF & Print:** Isolated 1-page museum-grade print engine (`printSingleSpecimenFolio`) allowing explorers to print physical field cards or save vector-sharp PDFs without website chrome.
+- 🌿 **Classical Herbarium Reference Folios:** 7 curated anatomical reference plates (Plates I–VII: Venation, Bark & Lichen, Canopy, Urban Flora, Herbarium, Margins, Surface) with diagnostic keys, matching between Field Studio and the Field Journal.
 - 📖 **Focused Local Nature Journal (`/journal`):** A distraction-free explorer's log with dedicated **Adventures** history and **Field Notes & Observations** logs. Includes full JSON export and restore backup functionality.
 - 🧠 **Local Open-Weight AI (Ollama / Podman):** Optional self-hosted inference via local Ollama instances running open-weight models (`qwen2.5:3b` / Gemma), keeping prompts and insights private and sovereign.
 - ⚡ **Curated Offline Engine:** High-fidelity deterministic mission generator for immediate exploration without needing any AI server or connectivity.
@@ -44,9 +47,9 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 |                                                                                 |
 |  [EXPLORE / SETUP]        [FIELD JOURNAL]                 [FIELD STUDIO]        |
 |  - 15/30/60m durations    - Adventures History            - Art Style Presets   |
-|  - Habitat selection      - Field Notes & Observations    - Subject Generators  |
-|  - Mobility accessible    - Inline Reference Drawer       - Live Studio Canvas  |
-|  - Multi-tier AI Engine   - JSON Backup & Restore         - Download High-Res   |
+|  - Habitat selection      - Field Notes & Observations    - Victorian Loupe (2.8x)
+|  - Mobility accessible    - 7 Reference Plates (I-VII)    - Composite Folio PNG |
+|  - 9-Tier AI Engine       - JSON Backup & Restore         - 1-Page Dedicated PDF|
 |                                                                                 |
 +---------------------------------------------------------------------------------+
 ```
@@ -56,24 +59,21 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 ## Architecture Overview
 
 ```
-Browser PWA (React 19 + Tailwind v4 + Dexie IndexedDB + Web Worker)
+Browser PWA (React 19 + Tailwind v4 + Dexie IndexedDB + HTML5 Canvas)
    │
    ├─► Local Nature Journal (IndexedDB: Adventures, Field Notes, Observation Photos)
-   ├─► Field Studio (Client-side Procedural Specimen Synthesis & Canvas Renderer)
+   ├─► Field Studio (Victorian Loupe, 7 Reference Folios, Folio Exporter)
    │
    ▼ (REST API: /api/v1/*)
 Express 5 API Service (Node.js LTS)
    │
-   ├─► [Tier 1] CloudMissionProvider (Google Gemini 1.5 Flash / Groq Cloud Free Tier)
-   │        │
-   │        ▼ (Auto-failover on quota exhaustion or network timeout)
-   ├─► [Tier 2] OllamaMissionProvider ──► Local Ollama (:11434) ──► qwen2.5:3b / Gemma
-   │        │
-   │        ▼ (Auto-failover if local daemon is inactive)
-   └─► [Tier 3] DemoMissionProvider (Deterministic curated naturalist library, 100% offline)
+   ├─► [Tiers 1-5] Google Gemini Cluster (2.5-Flash → 2.0-Flash → 2.0-Flash-Lite → 1.5-Flash → 1.5-Flash-8b)
+   ├─► [Tiers 6-7] Groq LPU Cluster (Llama 3.3 70B Versatile → Llama 3.1 8B Instant)
+   ├─► [Tier 8]   Ollama Local Container (qwen2.5:3b / gemma2:2b on port 11434)
+   └─► [Tier 9]   Deterministic Curated Naturalist Library (100% offline air-gapped fallback)
 ```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for full system diagrams and data flow specifications.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/TRD.md](docs/TRD.md) for full system diagrams and data flow specifications.
 
 ---
 
@@ -284,6 +284,36 @@ npm run build
 - **No Remote Tracking:** FieldQuest collects zero telemetry.
 - **Local Data Ownership:** Your journal reflections and photos never leave your device.
 - **Ecological Safety:** Generated missions strictly prohibit ingesting unknown flora, disturbing wild animal habitats, or trespassing.
+
+---
+
+## Production Deployment (Netlify + Render + GitHub)
+
+FieldQuest is pre-configured for modern free-tier deployment decoupling the static PWA from the backend API:
+
+### 1. Frontend PWA on Netlify
+- **Config**: Auto-detected via [`netlify.toml`](netlify.toml) and [`apps/web/public/_redirects`](apps/web/public/_redirects).
+- **Build Command**: `npm run build:web`
+- **Publish Directory**: `apps/web/dist`
+- **Environment Variable**: `VITE_API_BASE_URL=https://fieldquest-api.onrender.com`
+
+### 2. Backend Express 5 API on Render
+- **Config**: Auto-configured via [`render.yaml`](render.yaml) Blueprint or as a standard Node Web Service.
+- **Build Command**: `npm ci && npm run build:api`
+- **Start Command**: `node apps/api/dist/server.js`
+- **Health Check Path**: `/api/v1/health`
+- **Environment Variables**:
+  - `NODE_ENV=production`
+  - `PORT=10000`
+  - `AI_PROVIDER=cloud`
+  - `GEMINI_API_KEY=your_gemini_key`
+  - `GROQ_API_KEY=your_groq_key`
+  - `CLIENT_ORIGIN=https://your-app.netlify.app`
+
+### 3. Automated CI/CD on GitHub
+- Auto-verifies TypeScript typechecks, Vitest test suites, and production builds on push/PR via [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+For comprehensive options including Podman containers and self-hosted VPS setups, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 ---
 

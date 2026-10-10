@@ -42,9 +42,10 @@ graph TD
     
     API --> Service
     Service --> Safety
-    Service -->|Tier 1: Server .env keys| CloudP
-    Service -.->|Tier 2: Failover if cloud exhausted| OllamaP
-    Service -.->|Tier 3: 100% Offline fallback| DemoP
+    Service -->|Tiers 1-5: Gemini Cluster| CloudP
+    Service -->|Tiers 6-7: Groq LPU Cluster| CloudP
+    Service -.->|Tier 8: Failover to Local AI| OllamaP
+    Service -.->|Tier 9: 100% Offline fallback| DemoP
     CloudP <-->|HTTPS REST| Gemini
     CloudP <-->|HTTPS REST| Groq
     OllamaP <-->|HTTP POST /api/generate| OllamaServer
@@ -58,21 +59,23 @@ graph TD
 ```mermaid
 graph LR
     subgraph Frontend_Components["Frontend Components (apps/web)"]
-        Landing["LandingPage (Ethos Hero)"]
+        Landing["LandingPage (Ethos Hero & Atelier Cards)"]
         Setup["AdventureSetupForm"]
         Active["ActiveAdventureScreen"]
         ScreenDown["ScreenDownMode (Sensory Walk)"]
         Journal["JournalView (Adventures & Notes)"]
         Studio["FieldStudioView (Specimen Art & Folios)"]
-        PlateDrawer["InlineReferenceDrawer (Card Accordion)"]
+        Loupe["VictorianLoupe (2.8x Optical Lens)"]
+        FolioExport["folio-exporter (1200x1580 Canvas & 1-Page PDF)"]
+        PlateDrawer["InlineReferenceDrawer (7 Folios I-VII)"]
         Philosophy["ObjectiveBasisModal (Philosophy & Science)"]
-        Settings["AISettingsModal (Zero-Key Cloud & Local Status)"]
+        Settings["AISettingsModal (Dual Cloud & Local Status)"]
     end
     
     subgraph State_Management["State & Data Layers"]
         ZustandSession["useAdventureSessionStore"]
         DexieDB["db (FieldQuestDB / IndexedDB)"]
-        SketchGen["sketch-generator (Procedural Art & Plates)"]
+        SketchGen["sketch-generator (7 Plates & Presets)"]
         QueryHooks["useMissionsMutation / useAIStatus"]
     end
     
@@ -86,6 +89,8 @@ graph LR
     DexieDB --> Journal
     Journal --> PlateDrawer
     Journal -.->|Illustrate in Studio| Studio
+    Studio --> Loupe
+    Studio --> FolioExport
     Studio <--> DexieDB
     Studio <--> SketchGen
 ```
