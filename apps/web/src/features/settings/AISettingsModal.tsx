@@ -226,44 +226,47 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-forest-dark/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
       <div className="bg-paper-white rounded-3xl border border-border-subtle p-5 sm:p-7 max-w-xl w-full shadow-2xl relative max-h-[92vh] overflow-y-auto scrollbar-none">
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 p-2 rounded-lg text-text-muted hover:text-forest-deep transition-colors cursor-pointer"
-          aria-label="Close settings"
-        >
-          <X className="w-5 h-5" />
-        </button>
-
-        {/* Modal Title */}
-        <div className="mb-6 pr-8 sm:pr-0">
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep text-[11px] font-semibold">
-              <Cpu className="w-3.5 h-3.5 text-moss-green" />
-              <span>Inference Diagnostics & Configuration</span>
+        {/* Header with Title and Fixed Close Action */}
+        <div className="flex items-start justify-between gap-3 mb-6 pb-3 border-b border-border-subtle/60">
+          <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-forest-deep/10 text-forest-deep text-[11px] font-semibold">
+                <Cpu className="w-3.5 h-3.5 text-moss-green" />
+                <span>AI Diagnostics</span>
+              </div>
+              {(() => {
+                const currentStatus = testResult || aiStatus;
+                if (!currentStatus) return null;
+                const isAvailable = currentStatus.status === 'available';
+                const displayProvider = currentStatus.provider === 'cloud' ? 'Cloud' : 'Local';
+                const displayModel = (currentStatus.model && currentStatus.model !== 'unknown')
+                  ? currentStatus.model
+                  : (selectedMode === 'cloud' ? (selectedCloudService === 'groq' ? 'llama-3.3-70b' : 'gemini-3.8-flash') : ollamaModel);
+                return (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle flex items-center gap-1.5 shadow-2xs max-w-full truncate">
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAvailable ? 'bg-emerald-600' : 'bg-emerald-600/70'}`} />
+                    <span className="truncate">{displayProvider}: {displayModel}</span>
+                  </span>
+                );
+              })()}
             </div>
-            {(() => {
-              const currentStatus = testResult || aiStatus;
-              if (!currentStatus) return null;
-              const isAvailable = currentStatus.status === 'available';
-              const displayProvider = currentStatus.provider === 'cloud' ? 'Cloud Naturalist' : currentStatus.provider;
-              const displayModel = (currentStatus.model && currentStatus.model !== 'unknown')
-                ? currentStatus.model
-                : (selectedMode === 'cloud' ? (selectedCloudService === 'groq' ? 'llama-3.3-70b-versatile' : 'gemini-3.8-flash') : ollamaModel);
-              return (
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle flex items-center gap-1.5 shadow-2xs">
-                  <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-600' : 'bg-emerald-600/70'}`} />
-                  <span>Active: {displayProvider} ({displayModel})</span>
-                </span>
-              );
-            })()}
+            <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep leading-tight">
+              AI Engine & Settings
+            </h2>
+            <p className="text-xs text-text-muted">
+              Choose your AI inference provider or manage local containerized models.
+            </p>
           </div>
-          <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
-            AI Engine & Settings
-          </h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            Choose your AI inference provider or manage local containerized models.
-          </p>
+
+          {/* Close Button (Flex-aligned, never overlaps badges) */}
+          <button
+            onClick={onClose}
+            className="p-2 -mr-1 -mt-1 rounded-xl text-text-muted hover:text-forest-deep hover:bg-parchment-warm transition-colors cursor-pointer shrink-0 border border-border-subtle/50"
+            aria-label="Close settings"
+            title="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="space-y-6 text-xs sm:text-sm">
