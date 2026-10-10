@@ -30,10 +30,20 @@ Explore FieldQuest through real interface captures showcasing its core features,
 
 FieldQuest actively counters "notification fatigue" and "doomscrolling" by encouraging mindful observation rather than screen fixation.
 
-| **The Victorian Study Desk & Philosophy** | **Tailored Adventure Generator** |
-|:---:|:---:|
-| ![FieldQuest Landing](apps/web/public/screenshot/1.png) | ![Adventure Configuration](apps/web/public/screenshot/2.png) |
-| *Hero & Ethos: Zero accounts required, 100% offline capable, and screen-down design.* | *Configure your quest: Select duration (15/30/60m), environment, and sensory focus.* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>The Victorian Study Desk &amp; Philosophy</strong><br/><br/>
+<img src="apps/web/public/screenshot/1.png" alt="FieldQuest Landing" width="100%" /><br/>
+<em>Hero &amp; Ethos: Zero accounts required, 100% offline capable, and screen-down design.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Tailored Adventure Generator</strong><br/><br/>
+<img src="apps/web/public/screenshot/2.png" alt="Adventure Configuration" width="100%" /><br/>
+<em>Configure your quest: Select duration (15/30/60m), environment, and sensory focus.</em>
+</td>
+</tr>
+</table>
 
 - **Problem Solved:** Typical outdoor apps demand constant screen gazing (GPS maps, camera AR). FieldQuest generates tactile sensory missions and then dims the screen so explorers look at living nature with their own eyes.
 - **Key Capability:** Generates structured sensory missions (15m sensory walk, 30m field observation, 60m deep expedition) adapted to urban parks, backyards, balcony pots, or forest trails.
@@ -44,10 +54,20 @@ FieldQuest actively counters "notification fatigue" and "doomscrolling" by encou
 
 An interactive scientific art workshop bringing 19th-century botanical lithography to modern web explorers.
 
-| **Field Illustrator Studio & Reference Folio Plates** | **Archived Specimen Studies & Folio Library** |
-|:---:|:---:|
-| ![Field Illustrator Studio](apps/web/public/screenshot/4.png) | ![Archived Specimen Studies](apps/web/public/screenshot/5.png) |
-| *Specimen Art Director with 6 historical styles and Plates I–VII botanical references.* | *Locally archived specimen studies rendered alongside historical plates.* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Field Illustrator Studio &amp; Reference Folios</strong><br/><br/>
+<img src="apps/web/public/screenshot/4.png" alt="Field Illustrator Studio" width="100%" /><br/>
+<em>Specimen Art Director with 6 historical styles and Plates I–VII botanical references.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Archived Specimen Studies &amp; Folio Library</strong><br/><br/>
+<img src="apps/web/public/screenshot/5.png" alt="Archived Specimen Studies" width="100%" /><br/>
+<em>Locally archived specimen studies rendered alongside historical plates.</em>
+</td>
+</tr>
+</table>
 
 - **Problem Solved:** Most apps provide only generic checklists. FieldQuest provides an artistic synthesis tool for recording diagnostic botanical traits (leaf venation, bark fissures, lichen thalli).
 - **Key Capability:**
@@ -63,15 +83,26 @@ An interactive scientific art workshop bringing 19th-century botanical lithograp
 
 A distraction-free, local-first scientific journal persisted directly in the explorer's browser.
 
-| **Exploration History & Metrics Dashboard** | **Acoustic Stratification & Mission Breakdown** |
-|:---:|:---:|
-| ![Exploration History Overview](apps/web/public/screenshot/3.png) | ![Acoustic Canopy Sound Mapping](apps/web/public/screenshot/8.png) |
-| *Personal metrics: Total adventures, outdoor minutes, completed quests (IndexedDB).* | *Acoustic soundscape mapping (Foreground, Midground, Background) and lichen census.* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Exploration History &amp; Metrics Dashboard</strong><br/><br/>
+<img src="apps/web/public/screenshot/3.png" alt="Exploration History Overview" width="100%" /><br/>
+<em>Personal metrics: Total adventures, outdoor minutes, completed quests (IndexedDB).</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Acoustic Stratification &amp; Mission Breakdown</strong><br/><br/>
+<img src="apps/web/public/screenshot/8.png" alt="Acoustic Canopy Sound Mapping" width="100%" /><br/>
+<em>Acoustic soundscape mapping (Foreground, Midground, Background) and lichen census.</em>
+</td>
+</tr>
+</table>
 
-| **Field Notes & Specimen Linking** |
-|:---:|
-| ![Field Notes with Specimen Reference](apps/web/public/screenshot/9.png) |
-| *Observation cards linked to Plates I–VII, location tags, word count, and full backup/restore.* |
+<p align="center">
+<strong>Field Notes &amp; Specimen Linking</strong><br/><br/>
+<img src="apps/web/public/screenshot/9.png" alt="Field Notes with Specimen Reference" width="85%" /><br/>
+<em>Observation cards linked to Plates I–VII, location tags, word count, and full backup/restore.</em>
+</p>
 
 - **Problem Solved:** Cluttered social feeds commodify nature into likes and followers. FieldQuest offers an introspective, private scientific notebook.
 - **Key Capability:**
@@ -85,10 +116,20 @@ A distraction-free, local-first scientific journal persisted directly in the exp
 
 FieldQuest bridges free-tier multi-cloud AI with sovereign on-device open-weight LLMs in a single interface.
 
-| **Production Multi-Cloud Resilience Matrix** | **Air-Gapped Local AI Container Engine** |
-|:---:|:---:|
-| ![Cloud AI Settings & 9-Tier Failover](apps/web/public/screenshot/6.png) | ![Local Ollama Container Runtime](apps/web/public/screenshot/7.png) |
-| *Production 9-tier cascading failover across Google Gemini & Groq Cloud LPU.* | *100% private, zero-network containerized Ollama (`qwen2.5:3b`, `gemma2:2b`).* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Production Multi-Cloud Resilience Matrix</strong><br/><br/>
+<img src="apps/web/public/screenshot/6.png" alt="Cloud AI Settings &amp; 9-Tier Failover" width="100%" /><br/>
+<em>Production 9-tier cascading failover across Google Gemini &amp; Groq Cloud LPU.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Air-Gapped Local AI Container Engine</strong><br/><br/>
+<img src="apps/web/public/screenshot/7.png" alt="Local Ollama Container Runtime" width="100%" /><br/>
+<em>100% private, zero-network containerized Ollama (`qwen2.5:3b`, `gemma2:2b`).</em>
+</td>
+</tr>
+</table>
 
 - **Problem Solved:** Cloud AI APIs suffer from quota limits (HTTP 429), rate limiting, and outages. Local-only AI requires technical setup. FieldQuest seamlessly integrates both.
 - **Key Capability:**
@@ -102,15 +143,26 @@ FieldQuest bridges free-tier multi-cloud AI with sovereign on-device open-weight
 
 Run FieldQuest as a complete, rootless containerized microservice stack in Podman Desktop or Docker.
 
-| **Podman Desktop Container Pod** | **Lightweight Hardened OCI Images** |
-|:---:|:---:|
-| ![Podman Desktop Containers](apps/web/public/screenshot/10.png) | ![Podman Desktop Images](apps/web/public/screenshot/11.png) |
-| *Compose stack: `web` (5173), `api` (4000), and `ai` (11434) running rootless in Podman.* | *Production alpine images: Web (70 MB), API (180 MB), Ollama (5.5 GB).* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Podman Desktop Container Pod</strong><br/><br/>
+<img src="apps/web/public/screenshot/10.png" alt="Podman Desktop Containers" width="100%" /><br/>
+<em>Compose stack: <code>web</code> (5173), <code>api</code> (4000), and <code>ai</code> (11434) running rootless in Podman.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Lightweight Hardened OCI Images</strong><br/><br/>
+<img src="apps/web/public/screenshot/11.png" alt="Podman Desktop Images" width="100%" /><br/>
+<em>Production alpine images: Web (70 MB), API (180 MB), Ollama (5.5 GB).</em>
+</td>
+</tr>
+</table>
 
-| **Persistent Model Storage Volume** |
-|:---:|
-| ![Podman Desktop Volumes](apps/web/public/screenshot/12.png) |
-| *`fieldquest_ollama_models` persistent volume preserving weights across restarts.* |
+<p align="center">
+<strong>Persistent Model Storage Volume</strong><br/><br/>
+<img src="apps/web/public/screenshot/12.png" alt="Podman Desktop Volumes" width="85%" /><br/>
+<em><code>fieldquest_ollama_models</code> persistent volume preserving weights across restarts.</em>
+</p>
 
 - **Problem Solved:** Eliminates "it works on my machine" syndrome and commercial Docker Desktop licensing restrictions.
 - **Key Capability:**

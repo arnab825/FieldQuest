@@ -31,20 +31,50 @@ FieldQuest is a Victorian-botany-inspired, **screen-down**, offline-first Progre
 
 ### Visual Walkthrough
 
-| **Hero & Ethos** | **Sensory Quest Planner** |
-|:---:|:---:|
-| ![Hero & Ethos](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/1.png) | ![Quest Planner](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/2.png) |
-| *Screen-down philosophy & zero cloud tracking.* | *Tailored 15/30/60m outdoor missions.* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Hero &amp; Ethos</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/1.png" alt="Hero &amp; Ethos" width="100%" /><br/>
+<em>Screen-down philosophy &amp; zero cloud tracking.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Sensory Quest Planner</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/2.png" alt="Quest Planner" width="100%" /><br/>
+<em>Tailored 15/30/60m outdoor missions.</em>
+</td>
+</tr>
+</table>
 
-| **Botanical Field Studio** | **Acoustic Canopy Sound Mapping** |
-|:---:|:---:|
-| ![Field Studio](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/4.png) | ![Sound Mapping](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/8.png) |
-| *Historical styles & Classical Plates I–VII.* | *Acoustic stratification & lichen census.* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Botanical Field Studio</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/4.png" alt="Field Studio" width="100%" /><br/>
+<em>Historical styles &amp; Classical Plates I–VII.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Acoustic Canopy Sound Mapping</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/8.png" alt="Sound Mapping" width="100%" /><br/>
+<em>Acoustic stratification &amp; lichen census.</em>
+</td>
+</tr>
+</table>
 
-| **Production Multi-Cloud Resilience** | **Air-Gapped Local AI Container** |
-|:---:|:---:|
-| ![Cloud AI Settings](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/6.png) | ![Local AI Container](https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/7.png) |
-| *Gemini & Groq cascading 9-tier auto-failover.* | *100% private Ollama (`qwen2.5:3b`, `gemma2:2b`).* |
+<table width="100%">
+<tr>
+<td width="50%" valign="top" align="center">
+<strong>Production Multi-Cloud Resilience</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/6.png" alt="Cloud AI Settings" width="100%" /><br/>
+<em>Gemini &amp; Groq cascading 9-tier auto-failover.</em>
+</td>
+<td width="50%" valign="top" align="center">
+<strong>Air-Gapped Local AI Container</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/7.png" alt="Local AI Container" width="100%" /><br/>
+<em>100% private Ollama (qwen2.5:3b, gemma2:2b).</em>
+</td>
+</tr>
+</table>
 
 ---
 
