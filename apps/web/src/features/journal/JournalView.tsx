@@ -617,11 +617,6 @@ export const JournalView: React.FC = () => {
           return plateByUrl || getMatchingBotanicalPlate(e.notes, e.missionTitle, e.environment);
         };
 
-        // Collect referenced plates from current observations
-        const referencedPlates = BOTANICAL_FIELD_PLATES.filter(p =>
-          entries.some(e => getEntryPlate(e).id === p.id)
-        );
-
         const filteredEntries = selectedFilterPlateId
           ? entries.filter(e => getEntryPlate(e).id === selectedFilterPlateId)
           : entries;
@@ -642,8 +637,8 @@ export const JournalView: React.FC = () => {
 
         return (
           <div className="space-y-4">
-            {/* Filter Observations by Botanical Reference Plate */}
-            {entries.length > 0 && referencedPlates.length > 0 && (
+            {/* Filter Observations by Botanical Reference Plate (Matching Field Studio Plates I through VII) */}
+            {entries.length > 0 && (
               <div className="bg-paper-white/80 backdrop-blur-xs p-2 rounded-2xl border border-border-subtle/80 shadow-2xs mb-2">
                 <FilterBar
                   label={
@@ -657,7 +652,7 @@ export const JournalView: React.FC = () => {
                     label: 'All Observations',
                     count: entries.length,
                   }}
-                  items={referencedPlates.map(plate => ({
+                  items={BOTANICAL_FIELD_PLATES.map(plate => ({
                     id: plate.id,
                     label: `${plate.plateNumber}: ${plate.shortName}`,
                     count: entries.filter(e => getEntryPlate(e).id === plate.id).length,
@@ -988,10 +983,7 @@ export const JournalView: React.FC = () => {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                          {[
-                            matchedPlate,
-                            ...BOTANICAL_FIELD_PLATES.filter(p => p.id !== matchedPlate.id),
-                          ].map(plate => {
+                          {BOTANICAL_FIELD_PLATES.map(plate => {
                             const isMatched = matchedPlate.id === plate.id;
                             const isCurrent = ent.photoUrl === plate.src;
 

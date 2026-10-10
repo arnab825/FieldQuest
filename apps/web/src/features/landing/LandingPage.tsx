@@ -11,6 +11,7 @@ import {
   Volume2,
   TreePine,
   BookOpen,
+  Leaf,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -24,8 +25,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenObjectiveBasis }
       <section className="relative overflow-hidden pt-8 pb-12 sm:pt-16 sm:pb-24 border-b border-border-subtle bg-gradient-to-b from-parchment-warm via-paper-white to-parchment-warm">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-forest-deep/10 text-forest-deep text-[11px] sm:text-xs font-semibold tracking-wide uppercase mb-4 sm:mb-6">
-            <span className="w-2 h-2 rounded-full bg-leaf-accent animate-pulse shrink-0" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-paper-white/90 border border-forest-deep/15 text-forest-deep text-[11px] sm:text-xs font-semibold tracking-wide uppercase mb-4 sm:mb-6 shadow-2xs hover:border-moss-green/40 transition-colors">
+            <div className="w-4.5 h-4.5 rounded-md bg-forest-deep text-leaf-accent flex items-center justify-center shrink-0 shadow-2xs">
+              <Leaf className="w-2.5 h-2.5" />
+            </div>
             <span>AI-Guided Nature Exploration PWA</span>
           </div>
 

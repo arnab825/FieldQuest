@@ -480,17 +480,17 @@ export const FieldStudioView: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleDownloadFolio}
-                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-forest-deep text-paper-white hover:bg-forest-dark text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-[0.98] whitespace-nowrap"
                     title="Download complete high-res specimen card with title, description, and diagnostic keys"
                   >
                     <Download className="w-3.5 h-3.5 text-leaf-accent" />
-                    <span>Download Folio Card</span>
+                    <span>Download Folio</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    className="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
                     title="Print archival field plate card or Save as PDF"
                   >
                     <Printer className="w-3.5 h-3.5 text-moss-green" />
@@ -500,7 +500,7 @@ export const FieldStudioView: React.FC = () => {
                   <button
                     type="button"
                     onClick={handleDownload}
-                    className="flex-1 sm:flex-initial px-2.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-text-muted hover:text-forest-deep flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs"
+                    className="flex-1 sm:flex-initial px-2.5 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-text-muted hover:text-forest-deep flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
                     title="Download raw image without plate details"
                   >
                     <span>Raw PNG</span>
@@ -690,19 +690,20 @@ export const FieldStudioView: React.FC = () => {
                 ))}
               </div>
 
-              <div className="pt-2 border-t border-border-subtle/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="pt-3 border-t border-border-subtle/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <button
                   type="button"
                   onClick={() => {
                     setSubject(plate.title);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-deep hover:text-moss-green cursor-pointer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-forest-deep hover:text-moss-green transition-colors cursor-pointer whitespace-nowrap self-start sm:self-auto group"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-leaf-accent" />
-                  <span>Use as Studio Inspiration ↑</span>
+                  <Sparkles className="w-3.5 h-3.5 text-moss-green group-hover:rotate-12 transition-transform" />
+                  <span>Use as Inspiration ↑</span>
                 </button>
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 self-start sm:self-auto">
                   <button
                     type="button"
                     onClick={() =>
@@ -716,17 +717,17 @@ export const FieldStudioView: React.FC = () => {
                         details: plate.details,
                       })
                     }
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-all cursor-pointer shadow-xs active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-dark transition-all cursor-pointer shadow-xs active:scale-[0.98] whitespace-nowrap"
                     title="Download complete high-res specimen card with title, description, and diagnostic keys"
                   >
                     <Download className="w-3.5 h-3.5 text-leaf-accent" />
-                    <span>Download Folio Card</span>
+                    <span>Download Folio</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-forest-deep transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-forest-deep transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
                     title="Print archival field plate or Save as PDF"
                   >
                     <Printer className="w-3.5 h-3.5 text-moss-green" />
@@ -736,10 +737,10 @@ export const FieldStudioView: React.FC = () => {
                   <a
                     href={plate.src}
                     download={`fieldquest-${plate.id}.jpg`}
-                    className="text-[11px] text-text-muted hover:text-forest-deep px-1.5 py-1 transition-colors"
-                    title="Download raw image file only"
+                    className="p-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-text-muted hover:text-forest-deep transition-colors shadow-2xs inline-flex items-center justify-center"
+                    title="Download raw original JPG"
                   >
-                    Image Only
+                    <ImageIcon className="w-3.5 h-3.5 text-moss-green" />
                   </a>
                 </div>
               </div>

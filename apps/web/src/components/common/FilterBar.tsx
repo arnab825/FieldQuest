@@ -226,23 +226,20 @@ export function FilterBar<T extends string = string>({
       {/* Optional Leading Label */}
       {label && <div className="shrink-0 mr-2.5 flex items-center">{label}</div>}
 
+      {/* Left Scroll Button (Flex sibling so it never obscures the first pill) */}
+      {showArrows && canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scrollBy(-180)}
+          className="shrink-0 mr-1 p-1 rounded-full bg-paper-white border border-border-subtle shadow-xs text-forest-deep hover:bg-parchment-warm transition-all cursor-pointer hover:scale-105 active:scale-95"
+          aria-label="Scroll filter left"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+      )}
+
       {/* Relative Track Wrapper */}
       <div className="relative flex-1 min-w-0 flex items-center overflow-hidden">
-        {/* Left Arrow & Fade Mask */}
-        {showArrows && canScrollLeft && (
-          <div className="absolute left-0 top-0 bottom-0 z-10 flex items-center pointer-events-none">
-            <div className="w-8 sm:w-10 h-full bg-gradient-to-r from-parchment-warm via-parchment-warm/80 to-transparent" />
-            <button
-              type="button"
-              onClick={() => scrollBy(-180)}
-              className="absolute left-0.5 p-1 rounded-full bg-paper-white border border-border-subtle shadow-sm text-forest-deep hover:bg-parchment-warm transition-all cursor-pointer pointer-events-auto hover:scale-105 active:scale-95"
-              aria-label="Scroll filter left"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
         {/* Horizontal Scroll Track */}
         <div
           ref={scrollRef}
@@ -281,22 +278,19 @@ export function FilterBar<T extends string = string>({
             );
           })}
         </div>
-
-        {/* Right Arrow & Fade Mask */}
-        {showArrows && canScrollRight && (
-          <div className="absolute right-0 top-0 bottom-0 z-10 flex items-center justify-end pointer-events-none">
-            <div className="w-8 sm:w-10 h-full bg-gradient-to-l from-parchment-warm via-parchment-warm/80 to-transparent" />
-            <button
-              type="button"
-              onClick={() => scrollBy(180)}
-              className="absolute right-0.5 p-1 rounded-full bg-paper-white border border-border-subtle shadow-sm text-forest-deep hover:bg-parchment-warm transition-all cursor-pointer pointer-events-auto hover:scale-105 active:scale-95"
-              aria-label="Scroll filter right"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* Right Scroll Button */}
+      {showArrows && canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scrollBy(180)}
+          className="shrink-0 ml-1 p-1 rounded-full bg-paper-white border border-border-subtle shadow-xs text-forest-deep hover:bg-parchment-warm transition-all cursor-pointer hover:scale-105 active:scale-95"
+          aria-label="Scroll filter right"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 }
