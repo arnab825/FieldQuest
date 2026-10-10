@@ -114,6 +114,8 @@ export async function saveAIConfig(data: {
   return res.json();
 }
 
+import { generateClientMissions } from '../lib/client-mission-generator.js';
+
 export async function requestGenerateMissions(
   preferences: AdventurePreferences,
   forcedMode?: 'ollama' | 'demo' | 'cloud',
@@ -122,35 +124,47 @@ export async function requestGenerateMissions(
   cloudService?: 'gemini' | 'groq',
   apiKey?: string
 ): Promise<GenerateMissionsResult> {
-  const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/v1/missions/generate`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    },
-    body: JSON.stringify({
-      ...preferences,
-      forcedMode,
-      model,
-      endpoint,
-      cloudService,
-      apiKey,
-    }),
-  });
-
-  if (!res.ok) {
-    const errorJson = await res.json().catch(() => ({}));
-    const err = new Error(
-      errorJson?.error?.message || `Generation failed with status ${res.status}`
-    );
-    (err as any).code = errorJson?.error?.code || (res.status === 429 ? 'RATE_LIMIT_EXCEEDED' : undefined);
-    (err as any).suggestion = errorJson?.error?.suggestion;
-    (err as any).details = errorJson?.error?.details;
-    throw err;
+  if (forcedMode === 'demo') {
+    return generateClientMissions(preferences);
   }
 
-  return res.json();
+  const base = getApiBaseUrl();
+  try {
+    const res = await fetch(`${base}/api/v1/missions/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        ...preferences,
+        forcedMode,
+        model,
+        endpoint,
+        cloudService,
+        apiKey,
+      }),
+    });
+
+    if (res.ok) {
+      return await res.json();
+    }
+
+    const errorJson = await res.json().catch(() => ({}));
+    if (res.status === 429) {
+      const err = new Error(
+        errorJson?.error?.message || 'Rate limit exceeded on public AI cluster'
+      );
+      (err as any).code = 'RATE_LIMIT_EXCEEDED';
+      (err as any).suggestion = errorJson?.error?.suggestion;
+      throw err;
+    }
+  } catch (err: any) {
+    if (err?.code === 'RATE_LIMIT_EXCEEDED') throw err;
+    // Backend unreachable / failed: seamlessly fall back to client-side on-device/curated generation
+  }
+
+  return generateClientMissions(preferences);
 }
 
 export interface MissionScaffoldResult {

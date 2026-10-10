@@ -153,24 +153,24 @@ export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSe
 
       {/* AI Provider Status Banner */}
       {aiStatus && aiStatus.status === 'unavailable' && !forcedDemoMode && (
-        <div className="mb-8 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+        <div className="mb-8 p-4 rounded-xl border border-border-subtle bg-parchment-warm/70 text-forest-deep text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-start gap-2.5">
-            <AlertCircle className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+            <Sparkles className="w-5 h-5 text-moss-green shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-amber-950">
-                Local AI (Ollama) is currently unreachable
+              <p className="font-semibold text-forest-deep">
+                Curated Field Naturalist Engine Ready
               </p>
-              <p className="text-amber-800 text-xs mt-0.5">
-                You can explore with our instant curated naturalist engine (Demo Mode).
+              <p className="text-text-muted text-xs mt-0.5">
+                Explore with our authentic botanical & ecological observation catalog (100% offline, zero setup).
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setForcedDemoMode(true)}
-            className="px-3 py-1.5 rounded-lg bg-amber-800 text-amber-50 font-medium hover:bg-amber-900 transition-colors text-xs whitespace-nowrap self-end sm:self-auto cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-forest-deep text-paper-white font-medium hover:bg-forest-deep/90 transition-colors text-xs whitespace-nowrap self-end sm:self-auto cursor-pointer"
           >
-            Switch to Demo Mode
+            Explore with Field Catalog
           </button>
         </div>
       )}
@@ -180,7 +180,7 @@ export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSe
           <span className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-moss-green" />
             <span>
-              Demo Mode Active: Deterministic curated naturalist missions.
+              Curated Field Engine Active: Authentic sensory botanical & ecological quests.
             </span>
           </span>
           <button
@@ -191,7 +191,7 @@ export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSe
             }}
             className="text-xs text-forest-deep font-semibold underline hover:text-forest-dark cursor-pointer"
           >
-            Retry Ollama
+            Check AI Status
           </button>
         </div>
       )}

@@ -108,9 +108,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
-                aiStatus?.status === 'available'
+                aiStatus?.status === 'available' || (typeof window !== 'undefined' && Boolean((window as any).ai?.languageModel))
                   ? 'bg-emerald-500'
-                  : 'bg-amber-500 animate-pulse'
+                  : 'bg-emerald-600/80'
               }`}
             />
             <span className="text-forest-deep font-semibold hidden xs:inline text-[11px] sm:text-xs">
@@ -118,16 +118,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                 ? `Local AI (${aiStatus.model.split(':')[0]})`
                 : aiStatus?.provider === 'cloud' && aiStatus.available
                 ? `Cloud AI (${aiStatus.cloudService === 'groq' ? 'Groq' : 'Gemini'})`
+                : (typeof window !== 'undefined' && Boolean((window as any).ai?.languageModel))
+                ? 'On-Device AI (Nano)'
                 : aiStatus?.provider === 'cloud'
-                ? 'Cloud AI (Ready)'
-                : 'Demo Engine'}
+                ? 'Cloud AI (Standby)'
+                : 'Botanical Catalog'}
             </span>
             <span className="text-forest-deep font-semibold xs:hidden text-[11px]">
               {aiStatus?.provider === 'ollama' && aiStatus.available
                 ? 'Local AI'
-                : aiStatus?.provider === 'cloud'
+                : aiStatus?.provider === 'cloud' && aiStatus.available
                 ? 'Cloud AI'
-                : 'Demo'}
+                : (typeof window !== 'undefined' && Boolean((window as any).ai?.languageModel))
+                ? 'On-Device'
+                : 'Catalog'}
             </span>
           </button>
 
