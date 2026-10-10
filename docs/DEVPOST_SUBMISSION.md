@@ -39,9 +39,9 @@ FieldQuest is a Victorian-botany-inspired, **screen-down**, offline-first Progre
 <em>Screen-down philosophy &amp; zero cloud tracking.</em>
 </td>
 <td width="50%" valign="top" align="center">
-<strong>Sensory Quest Planner</strong><br/><br/>
-<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/2.png" alt="Quest Planner" width="100%" /><br/>
-<em>Tailored 15/30/60m outdoor missions.</em>
+<strong>Adaptive Quest Planner</strong><br/><br/>
+<img src="https://raw.githubusercontent.com/arnab825/FieldQuest/main/apps/web/public/screenshot/2.png" alt="Adaptive Quest Planner" width="100%" /><br/>
+<em>Tailored 15/30/60m missions, seated accessibility &amp; custom botanical focus.</em>
 </td>
 </tr>
 </table>

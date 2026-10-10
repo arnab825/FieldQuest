@@ -38,9 +38,9 @@ FieldQuest actively counters "notification fatigue" and "doomscrolling" by encou
 <em>Hero &amp; Ethos: Zero accounts required, 100% offline capable, and screen-down design.</em>
 </td>
 <td width="50%" valign="top" align="center">
-<strong>Tailored Adventure Generator</strong><br/><br/>
-<img src="apps/web/public/screenshot/2.png" alt="Adventure Configuration" width="100%" /><br/>
-<em>Configure your quest: Select duration (15/30/60m), environment, and sensory focus.</em>
+<strong>Adaptive Quest Planner</strong><br/><br/>
+<img src="apps/web/public/screenshot/2.png" alt="Adaptive Quest Planner" width="100%" /><br/>
+<em>Select duration (15/30/60m), environment, seated accessibility &amp; custom botanical focus.</em>
 </td>
 </tr>
 </table>
