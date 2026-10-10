@@ -1,6 +1,15 @@
 import { AdventurePreferences, AIProviderStatus, NatureMission } from '../types/index.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+export function getApiBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const custom = localStorage.getItem('fieldquest_api_url');
+    if (custom && custom.trim()) {
+      return custom.trim().replace(/\/+$/, '');
+    }
+  }
+  const envUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '';
+  return envUrl ? envUrl.replace(/\/+$/, '') : '';
+}
 
 export interface GenerateMissionsResult {
   sessionId: string;
@@ -12,7 +21,8 @@ export interface GenerateMissionsResult {
 }
 
 export async function fetchHealth(): Promise<{ status: string; service: string }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/health`);
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/health`);
   if (!res.ok) throw new Error('Health check failed');
   return res.json();
 }
@@ -32,18 +42,31 @@ export async function fetchAIStatus(
   if (apiKey) params.set('apiKey', apiKey);
   const query = params.toString() ? `?${params.toString()}` : '';
 
-  const res = await fetch(`${API_BASE_URL}/api/v1/ai/status${query}`);
-  if (!res.ok) {
+  try {
+    const base = getApiBaseUrl();
+    const res = await fetch(`${base}/api/v1/ai/status${query}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (!res.ok || !contentType.includes('application/json')) {
+      return {
+        available: false,
+        status: 'unavailable',
+        provider: mode || 'cloud',
+        model: model || 'unknown',
+        cloudService,
+        message: 'Failed to contact backend API service.',
+      };
+    }
+    return await res.json();
+  } catch {
     return {
       available: false,
       status: 'unavailable',
       provider: mode || 'cloud',
       model: model || 'unknown',
       cloudService,
-      message: 'Failed to contact backend API service.',
+      message: 'Failed to reach backend API server.',
     };
   }
-  return res.json();
 }
 
 export async function saveAIConfig(data: {
@@ -53,7 +76,8 @@ export async function saveAIConfig(data: {
   cloudService?: 'gemini' | 'groq';
   apiKey?: string;
 }): Promise<{ success: boolean; status: AIProviderStatus }> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/ai/configure`, {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/ai/configure`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -72,7 +96,8 @@ export async function requestGenerateMissions(
   cloudService?: 'gemini' | 'groq',
   apiKey?: string
 ): Promise<GenerateMissionsResult> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/missions/generate`, {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/missions/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -122,7 +147,8 @@ export async function requestMissionScaffold(
   cloudService?: 'gemini' | 'groq',
   apiKey?: string
 ): Promise<MissionScaffoldResult> {
-  const res = await fetch(`${API_BASE_URL}/api/v1/missions/scaffold`, {
+  const base = getApiBaseUrl();
+  const res = await fetch(`${base}/api/v1/missions/scaffold`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
