@@ -233,7 +233,7 @@ To use live open-weight model generation:
 
 1. **Install and start Ollama:**
    ```bash
-   ollama server
+   ollama serve
    ```
 
 2. **Pull the default model (`qwen2.5:3b`):**
