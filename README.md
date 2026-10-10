@@ -18,7 +18,161 @@ FieldQuest is not another superficial chatbot wrapper; it is an **anti-chatbot n
 
 ---
 
-## Key Features
+---
+
+## 📸 Visual Tour & System Walkthrough
+
+Explore FieldQuest through real interface captures showcasing its core features, Victorian botanical aesthetics, multi-tier AI failover, and containerized architecture.
+
+---
+
+### 1. The Screen-Down Ethos & Sensory Adventure Planner
+
+FieldQuest actively counters "notification fatigue" and "doomscrolling" by encouraging mindful observation rather than screen fixation.
+
+| **The Victorian Study Desk & Philosophy** | **Tailored Adventure Generator** |
+|:---:|:---:|
+| ![FieldQuest Landing](apps/web/public/screenshot/1.png) | ![Adventure Configuration](apps/web/public/screenshot/2.png) |
+| *Hero & Ethos: Zero accounts required, 100% offline capable, and screen-down design.* | *Configure your quest: Select duration (15/30/60m), environment, and sensory focus.* |
+
+- **Problem Solved:** Typical outdoor apps demand constant screen gazing (GPS maps, camera AR). FieldQuest generates tactile sensory missions and then dims the screen so explorers look at living nature with their own eyes.
+- **Key Capability:** Generates structured sensory missions (15m sensory walk, 30m field observation, 60m deep expedition) adapted to urban parks, backyards, balcony pots, or forest trails.
+
+---
+
+### 2. Botanical Field Illustrator Studio & Classical Herbarium Folios
+
+An interactive scientific art workshop bringing 19th-century botanical lithography to modern web explorers.
+
+| **Field Illustrator Studio & Reference Folio Plates** | **Archived Specimen Studies & Folio Library** |
+|:---:|:---:|
+| ![Field Illustrator Studio](apps/web/public/screenshot/4.png) | ![Archived Specimen Studies](apps/web/public/screenshot/5.png) |
+| *Specimen Art Director with 6 historical styles and Plates I–VII botanical references.* | *Locally archived specimen studies rendered alongside historical plates.* |
+
+- **Problem Solved:** Most apps provide only generic checklists. FieldQuest provides an artistic synthesis tool for recording diagnostic botanical traits (leaf venation, bark fissures, lichen thalli).
+- **Key Capability:**
+  - **Specimen Art Director:** Choose historical styles (*Vintage Naturalist Lithograph*, *Microscopic & Venation Anatomy*, *Pressed Herbarium Specimen*, *Fine Copperplate Engraving*).
+  - **Classical Plates I–VII:** High-resolution morphological guides (Leaf Venation, Bark & Lichen, Canopy Acoustic Layering, Urban Flora, Herbarium Study, Leaf Margins, Micro-Morphology).
+  - **Hardware-Accelerated 2.8× Victorian Loupe:** Inspect microscopic cellular venation and lithograph hatching directly on artboards.
+  - **Archival Folio Composite Exporter:** Generates 1200×1580 museum-grade composite PNGs with ornamental Linnaean borders and diagnostic keys.
+  - **Single-Card Dedicated PDF & Print:** 1-click museum card printing without browser chrome.
+
+---
+
+### 3. Sensory Field Journal, Soundscape Stratification & Bioindicators
+
+A distraction-free, local-first scientific journal persisted directly in the explorer's browser.
+
+| **Exploration History & Metrics Dashboard** | **Acoustic Stratification & Mission Breakdown** |
+|:---:|:---:|
+| ![Exploration History Overview](apps/web/public/screenshot/3.png) | ![Acoustic Canopy Sound Mapping](apps/web/public/screenshot/8.png) |
+| *Personal metrics: Total adventures, outdoor minutes, completed quests (IndexedDB).* | *Acoustic soundscape mapping (Foreground, Midground, Background) and lichen census.* |
+
+| **Field Notes & Specimen Linking** |
+|:---:|
+| ![Field Notes with Specimen Reference](apps/web/public/screenshot/9.png) |
+| *Observation cards linked to Plates I–VII, location tags, word count, and full backup/restore.* |
+
+- **Problem Solved:** Cluttered social feeds commodify nature into likes and followers. FieldQuest offers an introspective, private scientific notebook.
+- **Key Capability:**
+  - **Acoustic Soundscape Stratification:** Teaches participants to isolate foreground sounds, ambient midground reverberations, and distant background geophony.
+  - **Bioindicator Census:** Guides observation of crustose, foliose, and fruticose lichens to assess urban microclimate and air purity.
+  - **100% Data Sovereignty:** All field notes, observations, and photos stay in the browser's IndexedDB. Includes one-click JSON backup and restore.
+
+---
+
+### 4. Dual-Engine AI Architecture: Multi-Cloud Resilience vs. Air-Gapped Local Inference
+
+FieldQuest bridges free-tier multi-cloud AI with sovereign on-device open-weight LLMs in a single interface.
+
+| **Production Multi-Cloud Resilience Matrix** | **Air-Gapped Local AI Container Engine** |
+|:---:|:---:|
+| ![Cloud AI Settings & 9-Tier Failover](apps/web/public/screenshot/6.png) | ![Local Ollama Container Runtime](apps/web/public/screenshot/7.png) |
+| *Production 9-tier cascading failover across Google Gemini & Groq Cloud LPU.* | *100% private, zero-network containerized Ollama (`qwen2.5:3b`, `gemma2:2b`).* |
+
+- **Problem Solved:** Cloud AI APIs suffer from quota limits (HTTP 429), rate limiting, and outages. Local-only AI requires technical setup. FieldQuest seamlessly integrates both.
+- **Key Capability:**
+  - **Production Multi-Cloud Cluster:** Google Gemini (`gemini-3.8-flash`, `gemini-3.1-flash`, `gemini-flash-latest`) + Groq Cloud LPU (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`). Auto-switches on quota exhaustion with zero downtime.
+  - **On-Device Local AI:** Live containerized Ollama integration running open-weight models (`qwen2.5:3b`, `gemma2:2b`, `llama3.2:3b`, `phi3.5:3.8b`) with live health diagnostics.
+  - **Botanical Field Catalog:** Zero-dependency deterministic offline library when both cloud and local LLMs are unreachable.
+
+---
+
+### 5. Production Podman Container Stack & Enterprise Dev Experience
+
+Run FieldQuest as a complete, rootless containerized microservice stack in Podman Desktop or Docker.
+
+| **Podman Desktop Container Pod** | **Lightweight Hardened OCI Images** |
+|:---:|:---:|
+| ![Podman Desktop Containers](apps/web/public/screenshot/10.png) | ![Podman Desktop Images](apps/web/public/screenshot/11.png) |
+| *Compose stack: `web` (5173), `api` (4000), and `ai` (11434) running rootless in Podman.* | *Production alpine images: Web (70 MB), API (180 MB), Ollama (5.5 GB).* |
+
+| **Persistent Model Storage Volume** |
+|:---:|
+| ![Podman Desktop Volumes](apps/web/public/screenshot/12.png) |
+| *`fieldquest_ollama_models` persistent volume preserving weights across restarts.* |
+
+- **Problem Solved:** Eliminates "it works on my machine" syndrome and commercial Docker Desktop licensing restrictions.
+- **Key Capability:**
+  - **Rootless & Daemonless:** Runs securely with Podman without root privileges or heavy background daemons.
+  - **Pre-Wired Compose Stack:** Single command (`npm run podman:up`) spins up React PWA, Express API, and Ollama AI engine with pre-configured networking.
+  - **Persistent Volumes:** Downloaded open-weight models (`qwen2.5:3b`, `gemma2:2b`) are preserved across container lifecycle events.
+
+---
+
+## 🎯 Core Use Cases & Who It Helps
+
+| Persona / Use Case | The Problem | How FieldQuest Helps |
+|:---|:---|:---|
+| **Urban Walkers & Commuters** | Nature blindness; walking with eyes glued to social media feeds. | 15-minute quick sensory missions turning standard city sidewalks and urban parks into living biodiversity discovery grounds. |
+| **STEM Students & Educators** | Abstract biology lessons without hands-on field experience. | Interactive morphological guides (Plates I–VII) teaching leaf venation architecture, tree bark textures, and lichen bioindicators. |
+| **Mindfulness & Mental Health Seekers** | Cognitive fatigue and chronic digital distraction. | Rooted in Kaplan's Attention Restoration Theory (ART); screen-down audio-first prompts restore involuntary attention. |
+| **Botanical Illustrators & Journalers** | Lacking easy tools to format and document field findings. | Specimen Art Director with 6 historical styles, 2.8× Victorian loupe, composite 1200×1580 PNG exporter, and 1-page PDF print cards. |
+| **Privacy Advocates & Hikers** | Cellular dead zones; distrust of apps demanding logins and tracking location. | 100% offline-first PWA, IndexedDB client storage, zero user accounts, and zero cloud telemetry. |
+| **AI Engineers & Open-Source Evaluators** | Frustration with fragile single-provider LLM integrations. | Multi-tier resilience architecture demonstrating automated cross-cloud failover (Gemini + Groq) and air-gapped local LLMs (`qwen2.5`, `gemma2`). |
+
+---
+
+## ⚖️ Comparative Analysis
+
+### 1. FieldQuest vs. Conventional Nature Apps & Social Platforms
+
+| Feature / Dimension | Conventional Social Feeds (Instagram, TikTok) | Commercial Nature ID Apps (Seek, iNaturalist) | **FieldQuest (Our Approach)** |
+|:---|:---:|:---:|:---:|
+| **Primary Interaction Mode** | Screen-first (infinite vertical scroll) | Camera-first (snap picture, look at screen) | **Screen-Down Mode** (pocket phone, engage sensory listening & touch) |
+| **User Privacy & Data Ownership** | Heavy tracking, ad targeting, required login | Cloud sync, public geolocations, required accounts | **100% Private IndexedDB**, zero accounts, zero tracking, local JSON backup |
+| **AI Model Autonomy** | Closed algorithmic feeds | Proprietary cloud vision models only | **Hybrid Multi-Cloud + Local Open-Weight** (Gemini, Groq, Ollama `qwen2.5:3b`, `gemma2:2b`) |
+| **System Uptime & Failover** | Outage brings whole app down | Single cloud API dependency | **9-Tier Cascading Failover** with zero-dependency deterministic catalog fallback |
+| **Artistic & Archival Output** | Ephemeral social story / post | Generic photo gallery / badge | **Archival Folio Lithographs** with 2.8× loupe, 1200×1580 PNG, and 1-page PDF cards |
+| **Remote Off-Grid Operation** | Unusable without cell coverage | Limited or degraded without connectivity | **Full PWA Offline Support**; works deep in backcountry trails with zero reception |
+
+---
+
+### 2. Localhost Containerized Setup vs. Public Cloud Deployment
+
+| Feature | **Localhost Development / Podman Setup** | **Public Live Website (`fieldquest.netlify.app`)** |
+|:---|:---|:---|
+| **Best For** | Full developer control, hackathon evaluation, and air-gapped privacy. | Instant evaluation with zero installation on desktop or mobile. |
+| **AI Runtime** | **Local Ollama container** (`qwen2.5:3b`, `gemma2:2b`) or Multi-Cloud. | **Multi-Cloud Naturalist Engine** (Google Gemini & Groq LPU free tiers). |
+| **Privacy Level** | 100% air-gapped; prompts never leave your local machine. | Zero user accounts, zero cookies, journal stored in browser IndexedDB. |
+| **Hardware Required** | Moderate CPU/RAM (Ollama runs comfortably on 8GB+ RAM). | Zero installation; runs smoothly on any modern browser or mobile phone. |
+| **How to Access** | Run `npm run dev` or `npm run podman:up` at `http://localhost:5173`. | Visit public URL directly from phone or browser. |
+
+---
+
+## 🏆 Evaluator & Judge 3-Minute Quickstart
+
+If you are evaluating this project for an event, hackathon, or code review:
+
+1. **Experience the Ethos:** Land on the home page (`/`) to review the Victorian study desk, philosophy principles, and sensory nature mission rationale.
+2. **Launch a Quest in 30 Seconds:** Click **"Begin An Adventure"** (`/setup`), pick **"15 min Sensory Walk"**, choose **"City Park"**, and generate an active quest. Observe the **Screen-Down Mode** toggle.
+3. **Inspect the Botanical Studio:** Navigate to **Field Studio** (`/studio`). Select an art style, click **"Download Folio"** to generate a 1200×1580 composite PNG with Linnaean border, or click **"PDF / Print"** for clean single-card museum printing.
+4. **Test the 9-Tier AI Resilience:** Click the **AI Engine & Settings** icon (gear in header). Observe the live cloud failover cluster (Gemini 2.5/2.0/1.5 & Groq LPU). If evaluating locally, switch to **"Local AI"** to test live containerized Ollama inference.
+5. **Review Offline Persistence:** Open **Field Journal** (`/journal`). Notice all adventures and notes are safely stored in **IndexedDB**. Test the **"Export JSON"** backup feature.
+
+---
+
+## ⚡ Key Technical & User Features
 
 - 🍃 **Context-Aware Nature Missions:** Generates tailored 15, 30, or 60-minute observational quests based on your environment, interests, difficulty, and time.
 - ☁️ **Cloud Naturalist Engine (Production AI):** Powered by free-tier production cloud models (Google Gemini 2.5/2.0/1.5 Flash & Groq Cloud Llama 3.3 70B). Zero GPU or local installation required, zero client credentials needed.
