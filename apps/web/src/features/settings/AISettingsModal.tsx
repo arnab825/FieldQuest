@@ -64,11 +64,6 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     return saved === 'groq' ? 'groq' : ((aiStatus?.cloudService as 'gemini' | 'groq') || 'gemini');
   });
 
-  // Remote Backend API URL (for linking Netlify to Render / custom backend)
-  const [backendApiUrl, setBackendApiUrl] = useState<string>(() => {
-    return localStorage.getItem('fieldquest_api_url') || '';
-  });
-
   // Diagnostics & testing state
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<AIProviderStatus | null>(null);
@@ -144,11 +139,6 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
   const handleSaveSettings = async () => {
     localStorage.setItem('fieldquest_ai_mode', selectedMode);
-    if (backendApiUrl.trim()) {
-      localStorage.setItem('fieldquest_api_url', backendApiUrl.trim());
-    } else {
-      localStorage.removeItem('fieldquest_api_url');
-    }
     if (selectedMode === 'cloud') {
       localStorage.setItem('fieldquest_cloud_service', selectedCloudService);
     }
@@ -413,7 +403,9 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                   ? currentStatus.groqModels
                   : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b'];
 
-                const primaryModel = currentStatus?.model || (isGroqPrimary ? groqList[0] : geminiList[0]);
+                const primaryModel = (currentStatus?.model && currentStatus.model !== 'unknown')
+                  ? currentStatus.model
+                  : (isGroqPrimary ? groqList[0] : geminiList[0]);
                 const totalTiers = geminiList.length + groqList.length + 2;
 
                 return (
@@ -514,45 +506,6 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                           )}
                         </button>
                       </div>
-                    </div>
-
-                    {/* Backend API Server Endpoint Card */}
-                    <div className="p-3.5 rounded-xl bg-paper-white border border-border-subtle space-y-2 z-10 relative">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[10px] font-bold uppercase tracking-wider text-forest-deep flex items-center gap-1.5">
-                          <Server className="w-3.5 h-3.5 text-moss-green" />
-                          <span>Backend API Server Endpoint (Render / Custom)</span>
-                        </label>
-                        <span className="text-[10px] text-text-muted">
-                          {backendApiUrl ? 'Custom API Linked' : 'Default / Bundled'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="url"
-                          placeholder="https://fieldquest-api.onrender.com"
-                          value={backendApiUrl}
-                          onChange={(e) => setBackendApiUrl(e.target.value)}
-                          className="flex-1 px-3 py-2 rounded-lg border border-border-subtle bg-parchment-warm/40 text-forest-deep text-xs font-mono focus:outline-none focus:border-forest-deep"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (backendApiUrl.trim()) {
-                              localStorage.setItem('fieldquest_api_url', backendApiUrl.trim());
-                            } else {
-                              localStorage.removeItem('fieldquest_api_url');
-                            }
-                            handleTestConnection();
-                          }}
-                          className="px-3 py-2 rounded-lg bg-forest-deep text-paper-white text-xs font-semibold hover:bg-forest-deep/90 transition-colors shrink-0 cursor-pointer"
-                        >
-                          Connect
-                        </button>
-                      </div>
-                      <p className="text-[10px] text-text-muted leading-relaxed">
-                        Paste your Render service URL (e.g. <span className="font-mono text-forest-deep font-semibold">https://your-service.onrender.com</span>) to link your Netlify frontend with your Cloud AI backend.
-                      </p>
                     </div>
 
                     {/* 3. Hero Active Model Spotlight (Dark Forest Glass Card) */}
