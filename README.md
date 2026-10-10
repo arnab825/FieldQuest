@@ -260,16 +260,33 @@ To use live open-weight model generation locally:
    ```
    *(If connecting directly from the web browser/Netlify, enable CORS: `OLLAMA_ORIGINS="*" ollama serve` or `$env:OLLAMA_ORIGINS="*" ; ollama serve` on Windows).*
 
-2. **Pull the default model (`qwen2.5:3b`):**
-   ```bash
-   ollama pull qwen2.5:3b
-   ```
+2. **Pull your preferred open-weight model:**
+   - **Google Gemma 2 (2B)** — *Ultra-fast, lightweight & optimized by Google DeepMind (1.6 GB):*
+     ```bash
+     ollama pull gemma2:2b
+     # Or inside the Podman container:
+     npm run podman:pull-gemma
+     ```
+   - **Alibaba Qwen 2.5 (3B)** — *Default balanced botanical & ecological specialist (1.9 GB):*
+     ```bash
+     ollama pull qwen2.5:3b
+     # Or inside the Podman container:
+     npm run podman:pull-model
+     ```
+   - **Meta Llama 3.2 (3B)** — *Concise & sharp nature observation prompts (2.0 GB):*
+     ```bash
+     ollama pull llama3.2:3b
+     ```
+   - **Microsoft Phi 3.5 (3.8B)** — *Strong scientific reasoning (2.2 GB):*
+     ```bash
+     ollama pull phi3.5:3.8b
+     ```
 
 3. **Configure your `.env`:**
    ```env
    AI_PROVIDER=ollama
    OLLAMA_BASE_URL=http://localhost:11434
-   OLLAMA_MODEL=qwen2.5:3b
+   OLLAMA_MODEL=gemma2:2b   # or qwen2.5:3b, llama3.2:3b, phi3.5:3.8b
    ```
 
 4. **Restart the API:**
