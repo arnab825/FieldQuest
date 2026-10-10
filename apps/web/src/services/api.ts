@@ -42,31 +42,57 @@ export async function fetchAIStatus(
   if (apiKey) params.set('apiKey', apiKey);
   const query = params.toString() ? `?${params.toString()}` : '';
 
-  try {
-    const base = getApiBaseUrl();
-    const res = await fetch(`${base}/api/v1/ai/status${query}`);
-    const contentType = res.headers.get('content-type') || '';
-    if (!res.ok || !contentType.includes('application/json')) {
+  const base = getApiBaseUrl();
+  if (base) {
+    try {
+      const res = await fetch(`${base}/api/v1/ai/status${query}`);
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
+        return await res.json();
+      }
+    } catch {
+      // Backend unreachable, attempt direct Ollama connection below if selected
+    }
+  }
+
+  // Direct Browser -> Ollama fallback (enables checking Ollama directly from the web app)
+  if (mode === 'ollama') {
+    const ollamaUrl = (endpoint || 'http://localhost:11434').replace(/\/+$/, '');
+    try {
+      const directRes = await fetch(`${ollamaUrl}/api/tags`);
+      if (directRes.ok) {
+        const data = await directRes.json();
+        const models = Array.isArray(data?.models) ? data.models.map((m: any) => m.name || m.model) : [];
+        const targetModel = model || 'qwen2.5:3b';
+        const isTargetInstalled = models.some((m: string) => m.includes(targetModel));
+        return {
+          available: isTargetInstalled || models.length > 0,
+          status: 'available',
+          provider: 'ollama',
+          model: targetModel,
+          installedModels: models,
+          message: `Direct local Ollama connected on port ${ollamaUrl.split(':').pop() || '11434'}.`,
+        };
+      }
+    } catch {
       return {
         available: false,
         status: 'unavailable',
-        provider: mode || 'cloud',
-        model: model || 'unknown',
-        cloudService,
-        message: 'Failed to contact backend API service.',
+        provider: 'ollama',
+        model: model || 'qwen2.5:3b',
+        message: `Local Ollama is offline at ${ollamaUrl}. Run 'ollama serve' to start.`,
       };
     }
-    return await res.json();
-  } catch {
-    return {
-      available: false,
-      status: 'unavailable',
-      provider: mode || 'cloud',
-      model: model || 'unknown',
-      cloudService,
-      message: 'Failed to reach backend API server.',
-    };
   }
+
+  return {
+    available: false,
+    status: 'unavailable',
+    provider: mode || 'cloud',
+    model: model || 'unknown',
+    cloudService,
+    message: 'Backend API server unreachable.',
+  };
 }
 
 export async function saveAIConfig(data: {
