@@ -73,9 +73,17 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
   const installedList = testResult?.installedModels || aiStatus?.installedModels || [];
 
   const isModelInstalled = (mId: string) => {
-    return installedList.some(
-      (inst) => inst === mId || inst.startsWith(mId.split(':')[0]) || mId.startsWith(inst.split(':')[0])
-    );
+    return installedList.some((inst) => {
+      if (inst === mId) return true;
+      const [instName, instTag] = inst.split(':');
+      const [mName, mTag] = mId.split(':');
+      if (instName === mName) {
+        if (!instTag || !mTag || instTag === 'latest' || mTag === 'latest' || instTag === mTag) {
+          return true;
+        }
+      }
+      return false;
+    });
   };
 
   const isCurrentModelInstalled = installedList.length === 0 || isModelInstalled(ollamaModel);
@@ -212,7 +220,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     { id: 'qwen2.5:3b', name: 'Qwen 2.5 (3B)', note: 'Recommended: Balanced & Ecological' },
     { id: 'gemma2:2b', name: 'Gemma 2 (2B)', note: 'Google DeepMind: Ultra Fast' },
     { id: 'llama3.2:3b', name: 'Llama 3.2 (3B)', note: 'Meta: Concise & Sharp' },
-    { id: 'phi3.5:mini', name: 'Phi 3.5 (3.8B)', note: 'Microsoft: Strong Reasoning' },
+    { id: 'phi3.5:latest', name: 'Phi 3.5 (3.8B)', note: 'Microsoft: Strong Reasoning' },
   ];
 
   return (
