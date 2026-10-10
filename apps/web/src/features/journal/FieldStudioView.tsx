@@ -27,7 +27,10 @@ import {
   CustomIllustrationResult,
   BOTANICAL_FIELD_PLATES,
 } from '../../lib/sketch-generator.js';
-import { exportCompositeSpecimenFolio } from '../../lib/folio-exporter.js';
+import {
+  exportCompositeSpecimenFolio,
+  printSingleSpecimenFolio,
+} from '../../lib/folio-exporter.js';
 import {
   getJournalEntries,
   addJournalEntry,
@@ -489,9 +492,36 @@ export const FieldStudioView: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      if (!result) return;
+                      const selectedPreset = BOTANICAL_STYLE_PRESETS.find(p => p.key === styleKey);
+                      printSingleSpecimenFolio({
+                        id: `studio-${seed}`,
+                        plateNumber: `Studio Plate #${seed.toString().slice(-4)}`,
+                        title: subject || 'Botanical Specimen Study',
+                        subtitle: `${selectedPreset?.label || 'Naturalist Lithograph'} · Seed #${seed}`,
+                        imageSrc: result.url,
+                        description:
+                          result.promptUsed ||
+                          `Botanical specimen illustration rendered in ${selectedPreset?.label || 'Naturalist'} style.`,
+                        details: [
+                          {
+                            title: 'Morphological Key',
+                            description: `Observed ${subject.toLowerCase()} structural venation & diagnostic biological adaptations.`,
+                          },
+                          {
+                            title: 'Historical Medium',
+                            description: `${selectedPreset?.label || 'Naturalist Lithograph'}: scientific lithography & morphological pigments.`,
+                          },
+                          {
+                            title: 'Archival Specimen',
+                            description: `${aspect === 'landscape' ? '800 × 600' : '768 × 768'} specimen render verified client-side.`,
+                          },
+                        ],
+                      });
+                    }}
                     className="flex-1 sm:flex-initial px-3 py-2 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-semibold text-forest-deep flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs whitespace-nowrap"
-                    title="Print archival field plate card or Save as PDF"
+                    title="Print archival field plate card or Save as PDF (1 Page)"
                   >
                     <Printer className="w-3.5 h-3.5 text-moss-green" />
                     <span>PDF / Print</span>
@@ -726,9 +756,19 @@ export const FieldStudioView: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => window.print()}
+                    onClick={() =>
+                      printSingleSpecimenFolio({
+                        id: plate.id,
+                        plateNumber: plate.plateNumber,
+                        title: plate.title,
+                        subtitle: plate.subtitle,
+                        imageSrc: plate.src,
+                        description: plate.description,
+                        details: plate.details,
+                      })
+                    }
                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-border-subtle bg-paper-white hover:bg-parchment-warm text-xs font-medium text-forest-deep transition-colors cursor-pointer shadow-2xs whitespace-nowrap"
-                    title="Print archival field plate or Save as PDF"
+                    title="Print archival field plate or Save as PDF (1 Page)"
                   >
                     <Printer className="w-3.5 h-3.5 text-moss-green" />
                     <span>PDF / Print</span>
