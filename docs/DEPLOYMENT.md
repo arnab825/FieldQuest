@@ -87,7 +87,7 @@ You can deploy using the automated Render Blueprint ([`render.yaml`](file:///d:/
 2. Connect your GitHub repository and set:
    - **Name:** `fieldquest-api`
    - **Runtime:** `Node`
-   - **Build Command:** `npm ci && npm run build:api`
+   - **Build Command:** `npm ci --include=dev && npm run build:api`
    - **Start Command:** `node apps/api/dist/server.js`
    - **Health Check Path:** `/api/v1/health`
 3. **Add Environment Variables**:
