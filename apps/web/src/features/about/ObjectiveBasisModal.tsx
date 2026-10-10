@@ -250,7 +250,7 @@ export const ObjectiveBasisModal: React.FC<ObjectiveBasisModalProps> = ({
               <div className="p-3.5 rounded-xl bg-forest-deep/5 border border-forest-deep/15 flex items-start gap-2.5">
                 <Info className="w-4 h-4 text-moss-green shrink-0 mt-0.5" />
                 <p className="text-xs text-forest-deep/80 leading-relaxed">
-                  <strong>Evaluator & Hackathon Note:</strong> You can test with instant curated Demo Mode or connect to a local Ollama daemon (<code className="font-mono text-forest-deep bg-paper-white px-1 py-0.5 rounded">qwen2.5:3b</code>). Works offline with full Progressive Web App (PWA) caching.
+                  <strong>Evaluator &amp; Hackathon Note:</strong> FieldQuest supports production multi-cloud AI via <span className="font-semibold text-forest-deep">Google Gemini</span> &amp; <span className="font-semibold text-forest-deep">Groq LPU</span> sequential failover, containerized local Ollama (<code className="font-mono text-forest-deep bg-paper-white px-1 py-0.5 rounded">qwen2.5:3b</code>), or instant offline curated archives. Works completely offline with full Progressive Web App (PWA) caching.
                 </p>
               </div>
             </div>

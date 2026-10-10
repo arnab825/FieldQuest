@@ -1,11 +1,16 @@
 import React from 'react';
-import { Leaf, ShieldCheck, Database, Heart } from 'lucide-react';
+import { Leaf, ShieldCheck, Database, Heart, Sparkles } from 'lucide-react';
+import { AIProviderStatus } from '../../types/index.js';
 
 interface FooterProps {
   onOpenObjectiveBasis?: () => void;
+  onOpenSettings?: () => void;
+  aiStatus?: AIProviderStatus;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onOpenObjectiveBasis }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenObjectiveBasis, onOpenSettings, aiStatus }) => {
+  const isLive = aiStatus?.status === 'available';
+
   return (
     <footer className="mt-auto border-t border-border-subtle bg-paper-white/70 pt-8 pb-24 md:py-10 text-xs text-text-muted">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -44,16 +49,47 @@ export const Footer: React.FC<FooterProps> = ({ onOpenObjectiveBasis }) => {
             </ul>
           </div>
 
-          {/* Open Source */}
+          {/* Hybrid Naturalist AI Architecture */}
           <div className="space-y-2">
-            <h4 className="font-semibold text-forest-deep uppercase tracking-wider text-[11px]">
-              Open-Weight AI
-            </h4>
-            <p className="text-[11px] leading-relaxed">
-              Designed for local Ollama inference (<code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep">qwen2.5:3b</code>) with deterministic curated fallback.
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-forest-deep uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-leaf-accent" />
+                <span>Naturalist AI Engine</span>
+              </h4>
+              <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-2xs ${
+                isLive
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                  : 'bg-amber-50 text-amber-800 border-amber-200'
+              }`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isLive ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
+                {isLive ? 'Live' : 'Standby'}
+              </span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-forest-deep/80">
+              Multi-cloud <span className="font-semibold text-forest-deep">Google Gemini</span> &amp; <span className="font-semibold text-forest-deep">Groq LPU</span> failover with containerized <code className="bg-parchment-warm px-1 py-0.5 rounded text-forest-deep font-mono">Ollama</code> &amp; air-gapped field archives.
             </p>
-            <p className="text-[11px] text-forest-deep/80">
-              Licensed under MIT License.
+            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100/80 text-emerald-900 border border-emerald-200/60">
+                Gemini
+              </span>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100/80 text-amber-900 border border-amber-200/60">
+                Groq LPU
+              </span>
+              <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-forest-deep/10 text-forest-deep border border-forest-deep/15">
+                Ollama
+              </span>
+              {onOpenSettings && (
+                <button
+                  type="button"
+                  onClick={onOpenSettings}
+                  className="text-[10px] font-bold text-forest-deep hover:text-moss-green hover:underline ml-auto cursor-pointer"
+                >
+                  Configure &rarr;
+                </button>
+              )}
+            </div>
+            <p className="text-[10px] text-text-muted pt-0.5">
+              Open source under MIT License.
             </p>
           </div>
         </div>

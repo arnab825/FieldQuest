@@ -98,4 +98,8 @@ export interface AIProviderStatus {
   installedModels?: string[];
   fallbackModels?: string[];
   configuredModels?: string[];
+  geminiModels?: string[];
+  groqModels?: string[];
+  geminiAvailable?: boolean;
+  groqAvailable?: boolean;
 }

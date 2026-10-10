@@ -18,6 +18,10 @@ export interface ProviderAvailability {
   installedModels?: string[];
   fallbackModels?: string[];
   configuredModels?: string[];
+  geminiModels?: string[];
+  groqModels?: string[];
+  geminiAvailable?: boolean;
+  groqAvailable?: boolean;
 }
 
 export interface AIMissionProvider {

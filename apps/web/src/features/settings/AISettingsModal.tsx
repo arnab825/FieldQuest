@@ -17,9 +17,7 @@ import {
   Sparkles,
   Shield,
   Zap,
-  Activity,
   Terminal,
-  ArrowRight,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIProviderStatus } from '../../types/index.js';
@@ -54,6 +52,12 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     return localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b';
   });
 
+  // Cloud provider preference state: 'gemini' | 'groq'
+  const [selectedCloudService, setSelectedCloudService] = useState<'gemini' | 'groq'>(() => {
+    const saved = localStorage.getItem('fieldquest_cloud_service');
+    return saved === 'groq' ? 'groq' : ((aiStatus?.cloudService as 'gemini' | 'groq') || 'gemini');
+  });
+
   // Diagnostics & testing state
   const [isTesting, setIsTesting] = useState(false);
   const [testResult, setTestResult] = useState<AIProviderStatus | null>(null);
@@ -79,7 +83,8 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         const res = await fetchAIStatus(
           selectedMode,
           selectedMode === 'ollama' ? ollamaModel : undefined,
-          selectedMode === 'ollama' ? endpoint : undefined
+          selectedMode === 'ollama' ? endpoint : undefined,
+          selectedMode === 'cloud' ? selectedCloudService : undefined
         );
         if (!isCancelled) {
           setTestResult(res);
@@ -92,7 +97,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [isOpen, selectedMode, endpoint, ollamaModel]);
+  }, [isOpen, selectedMode, endpoint, ollamaModel, selectedCloudService]);
 
   if (!isOpen) return null;
 
@@ -103,7 +108,8 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
       const res = await fetchAIStatus(
         selectedMode,
         selectedMode === 'ollama' ? ollamaModel : undefined,
-        selectedMode === 'ollama' ? endpoint : undefined
+        selectedMode === 'ollama' ? endpoint : undefined,
+        selectedMode === 'cloud' ? selectedCloudService : undefined
       );
       setTestResult(res);
 
@@ -117,6 +123,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         status: 'unavailable',
         provider: selectedMode,
         model: selectedMode === 'cloud' ? (aiStatus?.model || 'gemini-3.8-flash') : ollamaModel,
+        cloudService: selectedCloudService,
         message: 'Could not connect to the backend service to verify AI engine.',
       });
     } finally {
@@ -126,6 +133,9 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
   const handleSaveSettings = async () => {
     localStorage.setItem('fieldquest_ai_mode', selectedMode);
+    if (selectedMode === 'cloud') {
+      localStorage.setItem('fieldquest_cloud_service', selectedCloudService);
+    }
     if (selectedMode === 'ollama') {
       localStorage.setItem('fieldquest_ollama_endpoint', endpoint);
       localStorage.setItem('fieldquest_ollama_model', ollamaModel);
@@ -134,6 +144,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
     try {
       await saveAIConfig({
         mode: selectedMode,
+        cloudService: selectedMode === 'cloud' ? selectedCloudService : undefined,
         model: selectedMode === 'ollama' ? ollamaModel : undefined,
         endpoint: selectedMode === 'ollama' ? endpoint : undefined,
       });
@@ -371,126 +382,308 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 </div>
               </div>
 
-              {/* Live Real-Time Cloud Engine Status & Model Chain */}
+              {/* Premium Cloud Naturalist Architecture & Live Multi-Cloud Failover Pipeline */}
               {(() => {
                 const currentStatus = testResult || aiStatus;
                 const isAvailable = currentStatus?.status === 'available';
-                const cloudService = currentStatus?.cloudService === 'groq' ? 'Groq Cloud' : 'Google Gemini';
-                const primaryModel = currentStatus?.model || 'gemini-3.8-flash';
-                const fallbackList = currentStatus?.fallbackModels && currentStatus.fallbackModels.length > 0
-                  ? currentStatus.fallbackModels
-                  : ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+                const effectiveCloudService = selectedCloudService || currentStatus?.cloudService || 'gemini';
+                const isGroqPrimary = effectiveCloudService === 'groq';
+
+                const geminiList = currentStatus?.geminiModels && currentStatus.geminiModels.length > 0
+                  ? currentStatus.geminiModels
+                  : ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+
+                const groqList = currentStatus?.groqModels && currentStatus.groqModels.length > 0
+                  ? currentStatus.groqModels
+                  : ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'openai/gpt-oss-120b'];
+
+                const primaryModel = currentStatus?.model || (isGroqPrimary ? groqList[0] : geminiList[0]);
+                const totalTiers = geminiList.length + groqList.length + 2;
 
                 return (
-                  <div className="p-4 rounded-xl border border-border-subtle bg-paper-white space-y-3 shadow-2xs">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${isAvailable ? 'bg-emerald-500 ring-2 ring-emerald-200 animate-pulse' : 'bg-amber-500 ring-2 ring-amber-200'}`} />
-                        <span className="font-editorial text-sm font-bold text-forest-deep flex items-center gap-1.5">
-                          <Cloud className="w-4 h-4 text-leaf-accent" />
-                          <span>Real-Time Cloud Engine: {cloudService}</span>
-                        </span>
-                      </div>
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                          isAvailable
-                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            : 'bg-amber-50 text-amber-800 border-amber-200'
-                        }`}
-                      >
-                        {isAvailable ? '● Connected & Verified' : 'Standby / Fallback'}
-                      </span>
-                    </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-forest-deep/15 bg-gradient-to-b from-paper-white via-parchment-warm/25 to-paper-white p-4 sm:p-5 shadow-xs space-y-4">
+                    {/* Ambient botanical aura glow */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-leaf-accent/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
-                    <div className="space-y-2 pt-1 border-t border-border-subtle/50 text-xs">
-                      {/* Active Primary Model */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] font-bold text-text-muted">Active Primary Model:</span>
-                        <span className="font-mono text-xs font-bold text-forest-deep bg-parchment-warm px-2.5 py-0.5 rounded-md border border-border-subtle shadow-2xs">
-                          {primaryModel}
-                        </span>
-                        <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
-                          Live Inference
-                        </span>
-                      </div>
-
-                      {/* Sequential Fallback Chain */}
-                      <div>
-                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
-                          Sequential Fallback Chain (Active from .env):
-                        </span>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-forest-deep text-paper-white shadow-2xs">
-                            1. {primaryModel}
-                          </span>
-                          {fallbackList.map((fb, idx) => (
-                            <span
-                              key={fb}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-forest-deep/5 text-forest-deep border border-border-subtle"
-                            >
-                              {idx + 2}. {fb}
-                            </span>
-                          ))}
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
-                            &rarr; Local Ollama
-                          </span>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-parchment-warm text-text-muted border border-border-subtle">
-                            &rarr; Curated Library
-                          </span>
+                    {/* 1. Header: Multi-Cloud Resilience Engine Identity */}
+                    <div className="flex items-center justify-between flex-wrap gap-3 relative z-10 pb-3 border-b border-border-subtle/60">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-forest-deep text-leaf-accent flex items-center justify-center shadow-xs ring-1 ring-forest-deep/20 shrink-0">
+                          <Cloud className="w-5 h-5 text-leaf-accent" />
+                        </div>
+                        <div>
+                          <h4 className="font-editorial text-base sm:text-lg font-bold text-forest-deep leading-tight">
+                            Multi-Cloud Naturalist Engine
+                          </h4>
+                          <p className="text-[11px] text-text-muted">
+                            Google Gemini + Groq LPU dual-cluster architecture with server key rotation
+                          </p>
                         </div>
                       </div>
 
-                      {currentStatus?.message && (
-                        <p className="text-[11px] text-text-muted bg-parchment-warm/40 p-2 rounded-lg border border-border-subtle/40 leading-relaxed font-mono">
-                          {currentStatus.message}
-                        </p>
-                      )}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Gemini Status Chip */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 shadow-2xs">
+                          <span className="relative flex h-2 w-2">
+                            {isAvailable && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />}
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                          </span>
+                          <span className="text-[10px] font-bold tracking-tight">Gemini Live</span>
+                        </div>
+
+                        {/* Groq Status Chip */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs">
+                          <span className="relative flex h-2 w-2">
+                            {isAvailable && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />}
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+                          </span>
+                          <span className="text-[10px] font-bold tracking-tight">Groq LPU Live</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Primary Cloud Provider Selector Tabs */}
+                    <div className="space-y-1.5 relative z-10">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-text-muted block">
+                        Select Primary Cloud Service:
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCloudService('gemini')}
+                          className={`p-3 rounded-xl border-2 transition-all flex items-center justify-between text-left cursor-pointer ${
+                            !isGroqPrimary
+                              ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                              : 'border-border-subtle bg-paper-white hover:border-moss-green/40 text-forest-deep'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold text-xs">
+                              <Sparkles className={`w-3.5 h-3.5 ${!isGroqPrimary ? 'text-leaf-accent' : 'text-forest-deep'}`} />
+                              <span>Google Gemini</span>
+                            </div>
+                            <p className={`text-[10px] ${!isGroqPrimary ? 'text-paper-white/80' : 'text-text-muted'}`}>
+                              {geminiList.length} Models • High-Fidelity Multimodal
+                            </p>
+                          </div>
+                          {!isGroqPrimary && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-leaf-accent/20 text-leaf-accent uppercase">
+                              Primary
+                            </span>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCloudService('groq')}
+                          className={`p-3 rounded-xl border-2 transition-all flex items-center justify-between text-left cursor-pointer ${
+                            isGroqPrimary
+                              ? 'border-forest-deep bg-forest-deep text-paper-white shadow-xs'
+                              : 'border-border-subtle bg-paper-white hover:border-moss-green/40 text-forest-deep'
+                          }`}
+                        >
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold text-xs">
+                              <Zap className={`w-3.5 h-3.5 ${isGroqPrimary ? 'text-leaf-accent' : 'text-amber-700'}`} />
+                              <span>Groq Cloud (LPU)</span>
+                            </div>
+                            <p className={`text-[10px] ${isGroqPrimary ? 'text-paper-white/80' : 'text-text-muted'}`}>
+                              {groqList.length} Models • Ultra-Fast Sub-Second Inference
+                            </p>
+                          </div>
+                          {isGroqPrimary && (
+                            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-leaf-accent/20 text-leaf-accent uppercase">
+                              Primary
+                            </span>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* 3. Hero Active Model Spotlight (Dark Forest Glass Card) */}
+                    <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-forest-deep via-[#102C25] to-forest-deep p-4 text-paper-white shadow-md border border-forest-deep/40 z-10">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold tracking-widest text-leaf-accent uppercase">
+                            <Sparkles className="w-3 h-3 text-leaf-accent" />
+                            <span>Active Primary Model • Tier 1 Ingestion</span>
+                          </div>
+                          <div className="flex items-center gap-2.5 flex-wrap">
+                            <span className="font-mono text-sm sm:text-base font-bold tracking-wide text-paper-white break-all">
+                              {primaryModel}
+                            </span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-leaf-accent/20 text-leaf-accent border border-leaf-accent/30 flex items-center gap-1">
+                              <Zap className="w-2.5 h-2.5" />
+                              <span>Live Inference</span>
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          <div className="px-3 py-1.5 rounded-lg bg-paper-white/10 backdrop-blur-xs border border-paper-white/10 text-left sm:text-right">
+                            <span className="text-[9px] uppercase tracking-wider text-paper-white/70 block">Failover Protection</span>
+                            <span className="text-xs font-bold text-leaf-accent font-mono">
+                              {totalTiers} Tiers Active
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Interactive Multi-Cluster Sequential Failover Pipeline */}
+                    <div className="space-y-3 relative z-10 pt-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-forest-deep flex items-center gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-moss-green" />
+                          <span>Sequential Failover Pipeline (Live from .env)</span>
+                        </span>
+                        <span className="text-[10px] text-text-muted font-medium">
+                          Zero-Downtime Auto-Handoff
+                        </span>
+                      </div>
+
+                      {/* Cluster A: Google Gemini Models */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-emerald-800">
+                          <Sparkles className="w-3 h-3 text-emerald-600" />
+                          <span>Google Gemini Cluster ({geminiList.length} Models)</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                          {geminiList.map((modelId, idx) => {
+                            const isCurrentPrimary = !isGroqPrimary && (idx === 0 || modelId === primaryModel);
+                            return (
+                              <div
+                                key={modelId}
+                                className={`p-3 rounded-xl border transition-all space-y-1 ${
+                                  isCurrentPrimary
+                                    ? 'bg-forest-deep text-paper-white border-forest-deep shadow-xs'
+                                    : 'bg-paper-white border-border-subtle hover:border-emerald-600/40'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className={`font-bold uppercase tracking-wider ${isCurrentPrimary ? 'text-leaf-accent' : 'text-emerald-800'}`}>
+                                    Tier {idx + 1} • {isCurrentPrimary ? 'Active' : 'Standby'}
+                                  </span>
+                                  {isCurrentPrimary ? (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-leaf-accent animate-pulse" />
+                                  ) : (
+                                    <span className="text-[9px] font-mono text-text-muted bg-parchment-warm px-1.5 py-0.5 rounded">
+                                      Auto-Retry
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={`font-mono text-xs font-bold break-all ${isCurrentPrimary ? 'text-paper-white' : 'text-forest-deep'}`}>
+                                  {modelId}
+                                </div>
+                                <p className={`text-[10px] ${isCurrentPrimary ? 'text-paper-white/75' : 'text-text-muted'}`}>
+                                  {idx === 0 ? 'Primary Naturalist Engine' : 'Instant Quota Failover'}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Cluster B: Groq Cloud Models */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-900">
+                          <Zap className="w-3 h-3 text-amber-700" />
+                          <span>Groq LPU High-Speed Cluster ({groqList.length} Models)</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                          {groqList.map((modelId, idx) => {
+                            const isCurrentPrimary = isGroqPrimary && (idx === 0 || modelId === primaryModel);
+                            const tierNumber = geminiList.length + idx + 1;
+                            return (
+                              <div
+                                key={modelId}
+                                className={`p-3 rounded-xl border transition-all space-y-1 ${
+                                  isCurrentPrimary
+                                    ? 'bg-forest-deep text-paper-white border-forest-deep shadow-xs'
+                                    : 'bg-paper-white border-border-subtle hover:border-amber-600/40'
+                                }`}
+                              >
+                                <div className="flex items-center justify-between text-[10px]">
+                                  <span className={`font-bold uppercase tracking-wider ${isCurrentPrimary ? 'text-leaf-accent' : 'text-amber-800'}`}>
+                                    Tier {tierNumber} • {isCurrentPrimary ? 'Active' : 'LPU Standby'}
+                                  </span>
+                                  {isCurrentPrimary ? (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-leaf-accent animate-pulse" />
+                                  ) : (
+                                    <span className="text-[9px] font-mono text-amber-900 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200/60">
+                                      Groq LPU
+                                    </span>
+                                  )}
+                                </div>
+                                <div className={`font-mono text-xs font-bold break-all ${isCurrentPrimary ? 'text-paper-white' : 'text-forest-deep'}`}>
+                                  {modelId}
+                                </div>
+                                <p className={`text-[10px] ${isCurrentPrimary ? 'text-paper-white/75' : 'text-text-muted'}`}>
+                                  {idx === 0 ? 'Secondary Cloud Failover' : 'High-Speed LPU Redundancy'}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Cluster C: On-Device & Air-Gapped Resiliency */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-moss-green">
+                          <Shield className="w-3 h-3 text-moss-green" />
+                          <span>Local & Air-Gapped Resiliency Tiers</span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {/* Local AI Container Tier */}
+                          <div className="p-3 rounded-xl bg-paper-white border border-border-subtle hover:border-moss-green/40 transition-all space-y-1">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="font-bold text-amber-800 uppercase tracking-wider">
+                                Tier {geminiList.length + groqList.length + 1} • On-Device
+                              </span>
+                              <Server className="w-3 h-3 text-amber-700" />
+                            </div>
+                            <div className="font-mono text-xs font-bold text-forest-deep">
+                              Local AI (Ollama Container)
+                            </div>
+                            <p className="text-[10px] text-text-muted">
+                              Open-Weight Private Container
+                            </p>
+                          </div>
+
+                          {/* Air-Gapped Field Library Tier */}
+                          <div className="p-3 rounded-xl bg-paper-white border border-border-subtle hover:border-moss-green/40 transition-all space-y-1">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="font-bold text-moss-green uppercase tracking-wider">
+                                Tier {geminiList.length + groqList.length + 2} • Air-Gapped
+                              </span>
+                              <CheckCircle2 className="w-3 h-3 text-moss-green" />
+                            </div>
+                            <div className="font-mono text-xs font-bold text-forest-deep">
+                              Curated Field Logs
+                            </div>
+                            <p className="text-[10px] text-text-muted">
+                              100% Offline Resilience Archive
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5. Live Telemetry & Handshake Bar */}
+                    <div className="p-3 rounded-xl bg-forest-deep/5 border border-forest-deep/10 flex items-center justify-between flex-wrap gap-2 z-10 relative">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-3.5 h-3.5 text-moss-green shrink-0" />
+                        <span className="text-[11px] font-mono text-forest-deep leading-relaxed">
+                          {currentStatus?.message || `Ready: Connected via ${effectiveCloudService === 'groq' ? 'Groq Cloud' : 'Google Gemini'} (${primaryModel})`}
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-text-muted font-mono whitespace-nowrap">
+                        15 quests/min rate limit
+                      </span>
                     </div>
                   </div>
                 );
               })()}
-
-              {/* Visual Pipeline Flow */}
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
-                    <span className="text-[10px] font-bold text-moss-green uppercase block">Step 1 • Primary</span>
-                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
-                      <Cloud className="w-3 h-3 text-moss-green" />
-                      <span>{(testResult || aiStatus)?.model || 'gemini-3.8-flash'}</span>
-                    </h5>
-                    <p className="text-[10px] text-text-muted leading-tight">
-                      Executes via server-managed cloud models with zero client configuration.
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
-                    <span className="text-[10px] font-bold text-amber-700 uppercase block">Step 2 • Failover</span>
-                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
-                      <Server className="w-3 h-3 text-amber-700" />
-                      <span>Local AI (Ollama)</span>
-                    </h5>
-                    <p className="text-[10px] text-text-muted leading-tight">
-                      If cloud quota is exhausted or rate-limited, automatically triggers local container.
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-paper-white border border-border-subtle space-y-1">
-                    <span className="text-[10px] font-bold text-forest-deep uppercase block">Step 3 • Offline</span>
-                    <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3 text-forest-deep" />
-                      <span>Curated Field Library</span>
-                    </h5>
-                    <p className="text-[10px] text-text-muted leading-tight">
-                      Deterministic naturalist missions ensure 100% reliability even if fully offline.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-paper-white/80 border border-border-subtle text-[11px] text-text-muted leading-relaxed">
-                  💡 <strong>No configuration needed:</strong> Cloud credentials and rate limits are managed directly on the backend server. You never have to configure keys in the browser, and quest generation will never fail.
-                </div>
-              </div>
 
               {/* Test & Save Action Buttons */}
               <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">

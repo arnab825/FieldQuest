@@ -70,7 +70,11 @@ export const App: React.FC = () => {
         </main>
 
         {/* Global Footer */}
-        <Footer onOpenObjectiveBasis={() => setIsObjectiveBasisOpen(true)} />
+        <Footer
+          aiStatus={aiStatus}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenObjectiveBasis={() => setIsObjectiveBasisOpen(true)}
+        />
 
         {/* Mobile Bottom Navigation Bar (Screens < md) */}
         <MobileBottomNav

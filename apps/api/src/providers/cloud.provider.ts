@@ -108,7 +108,9 @@ export class CloudMissionProvider implements AIMissionProvider {
       options?.service === 'groq' ? options?.models : undefined
     );
 
-    // Check Gemini first if key exists
+    const preferredService = options?.service || this.defaultService;
+
+    let geminiWorkingModel: string | null = null;
     if (geminiKey && geminiKey.trim()) {
       for (const model of candidateGeminiModels) {
         try {
@@ -119,16 +121,8 @@ export class CloudMissionProvider implements AIMissionProvider {
           clearTimeout(timer);
 
           if (res.ok) {
-            return {
-              available: true,
-              status: 'available',
-              provider: 'cloud',
-              cloudService: 'gemini',
-              model: model,
-              fallbackModels: candidateGeminiModels.filter((m) => m !== model),
-              configuredModels: candidateGeminiModels,
-              message: `Cloud Naturalist Engine connected via Google Gemini (${model})${candidateGeminiModels.length > 1 ? ` with fallback models: ${candidateGeminiModels.slice(1).join(', ')}` : ''}.`,
-            };
+            geminiWorkingModel = model;
+            break;
           }
         } catch (err) {
           console.warn(`[FieldQuest AI] Gemini ping failed for model '${model}':`, err);
@@ -136,7 +130,7 @@ export class CloudMissionProvider implements AIMissionProvider {
       }
     }
 
-    // Check Groq if key exists
+    let groqWorkingModel: string | null = null;
     if (groqKey && groqKey.trim()) {
       for (const model of candidateGroqModels) {
         try {
@@ -152,16 +146,8 @@ export class CloudMissionProvider implements AIMissionProvider {
           clearTimeout(timer);
 
           if (res.ok) {
-            return {
-              available: true,
-              status: 'available',
-              provider: 'cloud',
-              cloudService: 'groq',
-              model: model,
-              fallbackModels: candidateGroqModels.filter((m) => m !== model),
-              configuredModels: candidateGroqModels,
-              message: `Cloud Naturalist Engine connected via Groq Cloud (${model})${candidateGroqModels.length > 1 ? ` with fallback models: ${candidateGroqModels.slice(1).join(', ')}` : ''}.`,
-            };
+            groqWorkingModel = model;
+            break;
           }
         } catch (err) {
           console.warn(`[FieldQuest AI] Groq ping failed for model '${model}':`, err);
@@ -169,13 +155,75 @@ export class CloudMissionProvider implements AIMissionProvider {
       }
     }
 
+    // Determine primary service based on preferred choice and working model
+    const primaryService: 'gemini' | 'groq' | null =
+      preferredService === 'groq' && groqWorkingModel
+        ? 'groq'
+        : geminiWorkingModel
+        ? 'gemini'
+        : groqWorkingModel
+        ? 'groq'
+        : null;
+
+    if (primaryService === 'gemini' && geminiWorkingModel) {
+      const geminiFallbacks = candidateGeminiModels.filter((m) => m !== geminiWorkingModel);
+      const combinedFallbacks = groqWorkingModel || (groqKey && groqKey.trim())
+        ? [...geminiFallbacks, ...candidateGroqModels]
+        : geminiFallbacks;
+
+      return {
+        available: true,
+        status: 'available',
+        provider: 'cloud',
+        cloudService: 'gemini',
+        model: geminiWorkingModel,
+        fallbackModels: combinedFallbacks,
+        configuredModels: [...candidateGeminiModels, ...(groqKey ? candidateGroqModels : [])],
+        geminiModels: candidateGeminiModels,
+        groqModels: candidateGroqModels,
+        geminiAvailable: true,
+        groqAvailable: Boolean(groqWorkingModel),
+        message: `Cloud Naturalist Engine connected via Google Gemini (${geminiWorkingModel})${
+          groqWorkingModel ? ` with cross-cloud failover to Groq (${groqWorkingModel})` : ''
+        }.`,
+      };
+    }
+
+    if (primaryService === 'groq' && groqWorkingModel) {
+      const groqFallbacks = candidateGroqModels.filter((m) => m !== groqWorkingModel);
+      const combinedFallbacks = geminiWorkingModel || (geminiKey && geminiKey.trim())
+        ? [...groqFallbacks, ...candidateGeminiModels]
+        : groqFallbacks;
+
+      return {
+        available: true,
+        status: 'available',
+        provider: 'cloud',
+        cloudService: 'groq',
+        model: groqWorkingModel,
+        fallbackModels: combinedFallbacks,
+        configuredModels: [...candidateGroqModels, ...(geminiKey ? candidateGeminiModels : [])],
+        geminiModels: candidateGeminiModels,
+        groqModels: candidateGroqModels,
+        geminiAvailable: Boolean(geminiWorkingModel),
+        groqAvailable: true,
+        message: `Cloud Naturalist Engine connected via Groq Cloud (${groqWorkingModel})${
+          geminiWorkingModel ? ` with cross-cloud failover to Google Gemini (${geminiWorkingModel})` : ''
+        }.`,
+      };
+    }
+
     return {
       available: false,
       status: 'unavailable',
       provider: 'cloud',
       model: this.modelId,
-      fallbackModels: this.geminiModels.slice(1),
-      configuredModels: this.geminiModels,
+      fallbackModels: [...this.geminiModels.slice(1), ...this.groqModels],
+      configuredModels: [...this.geminiModels, ...this.groqModels],
+      geminiModels: this.geminiModels,
+      groqModels: this.groqModels,
+      geminiAvailable: false,
+      groqAvailable: false,
       message: 'No cloud API key active or keys exhausted. Automatic failover to Local AI (Ollama) or curated offline library is active.',
     };
   }
