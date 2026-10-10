@@ -39,3 +39,6 @@ test-results/
 # Temporary files
 tmp/
 temp/
+
+# Submission drafts / Private docs
+docs/DEVPOST_SUBMISSION.md
