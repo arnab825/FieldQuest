@@ -235,6 +235,7 @@ To use live open-weight model generation:
    ```bash
    ollama serve
    ```
+   *(If connecting directly from the web browser/Netlify, enable CORS: `OLLAMA_ORIGINS="*" ollama serve` or `$env:OLLAMA_ORIGINS="*" ; ollama serve` on Windows).*
 
 2. **Pull the default model (`qwen2.5:3b`):**
    ```bash
