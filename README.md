@@ -229,7 +229,14 @@ GROQ_MODELS=llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-120b
 
 ## Setting Up Real Local AI with Ollama
 
-To use live open-weight model generation:
+> [!WARNING]
+> **Production Website vs. Localhost AI Limitation:**
+> Modern web browsers (Chrome, Edge, Safari) strictly block public HTTPS websites (such as `https://fieldquest.netlify.app`) from sending requests to private local IP addresses (`http://localhost:11434`) under browser **Mixed-Content** & **Private Network Access (PNA)** security rules.
+> 
+> - **To run 100% Real Local AI (Ollama / Podman `qwen2.5:3b`):** You **must** clone the repository and run FieldQuest locally at **`http://localhost:5173`**.
+> - **On the Public Live Website (`fieldquest.netlify.app`):** Use the default **"Production Multi-Cloud"** engine (Google Gemini & Groq LPU) or the **"Botanical Field Catalog"** — both work out-of-the-box for all visitors without any installation.
+
+To use live open-weight model generation locally:
 
 1. **Install and start Ollama:**
    ```bash

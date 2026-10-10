@@ -67,6 +67,12 @@ FieldQuest comes pre-configured with [`netlify.toml`](file:///d:/hacktoberfest/F
 4. **Deploy**:
    - Click **Deploy Site**. Netlify will build the PWA bundle, register service workers, and serve assets through their global edge CDN.
 
+> [!NOTE]
+> **Production vs. Local Container AI:**
+> Netlify serves FieldQuest over public HTTPS. Due to browser Private Network Access security policies, public HTTPS web apps cannot call private `http://localhost:11434` directly.
+> - **In Production (`netlify.app`):** Explorers use the live **Render Multi-Cloud API** (Gemini/Groq) or the built-in offline **Botanical Field Catalog**.
+> - **For 100% Local Air-Gapped AI (Ollama / Podman):** Users run the app locally at **`http://localhost:5173`**.
+
 ---
 
 ### 3.2 Deploying Backend API to Render
