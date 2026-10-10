@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Cpu,
@@ -16,6 +16,10 @@ import {
   Layers,
   Sparkles,
   Shield,
+  Zap,
+  Activity,
+  Terminal,
+  ArrowRight,
 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { AIProviderStatus } from '../../types/index.js';
@@ -66,13 +70,41 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
   const isCurrentModelInstalled = installedList.length === 0 || isModelInstalled(ollamaModel);
 
+  // Automatically fetch live status when modal opens or active mode changes
+  useEffect(() => {
+    if (!isOpen) return;
+    let isCancelled = false;
+    const fetchCurrentStatus = async () => {
+      try {
+        const res = await fetchAIStatus(
+          selectedMode,
+          selectedMode === 'ollama' ? ollamaModel : undefined,
+          selectedMode === 'ollama' ? endpoint : undefined
+        );
+        if (!isCancelled) {
+          setTestResult(res);
+        }
+      } catch {
+        // preserve existing status
+      }
+    };
+    fetchCurrentStatus();
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, selectedMode, endpoint, ollamaModel]);
+
   if (!isOpen) return null;
 
   const handleTestConnection = async () => {
     setIsTesting(true);
     setTestResult(null);
     try {
-      const res = await fetchAIStatus(selectedMode, ollamaModel, endpoint);
+      const res = await fetchAIStatus(
+        selectedMode,
+        selectedMode === 'ollama' ? ollamaModel : undefined,
+        selectedMode === 'ollama' ? endpoint : undefined
+      );
       setTestResult(res);
 
       if (selectedMode === 'ollama' && res.available && res.model && res.model !== 'unknown') {
@@ -84,7 +116,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
         available: false,
         status: 'unavailable',
         provider: selectedMode,
-        model: selectedMode === 'cloud' ? 'cloud-production' : ollamaModel,
+        model: selectedMode === 'cloud' ? (aiStatus?.model || 'gemini-3.8-flash') : ollamaModel,
         message: 'Could not connect to the backend service to verify AI engine.',
       });
     } finally {
@@ -94,14 +126,16 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
 
   const handleSaveSettings = async () => {
     localStorage.setItem('fieldquest_ai_mode', selectedMode);
-    localStorage.setItem('fieldquest_ollama_endpoint', endpoint);
-    localStorage.setItem('fieldquest_ollama_model', ollamaModel);
+    if (selectedMode === 'ollama') {
+      localStorage.setItem('fieldquest_ollama_endpoint', endpoint);
+      localStorage.setItem('fieldquest_ollama_model', ollamaModel);
+    }
 
     try {
       await saveAIConfig({
         mode: selectedMode,
-        model: ollamaModel,
-        endpoint: endpoint,
+        model: selectedMode === 'ollama' ? ollamaModel : undefined,
+        endpoint: selectedMode === 'ollama' ? endpoint : undefined,
       });
     } catch (err) {
       console.warn('Backend sync fallback:', err);
@@ -183,11 +217,19 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
               <Cpu className="w-3.5 h-3.5 text-moss-green" />
               <span>Inference Diagnostics & Configuration</span>
             </div>
-            {aiStatus && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle">
-                Active: {aiStatus.provider === 'cloud' ? 'Cloud Naturalist' : aiStatus.provider} ({aiStatus.model})
-              </span>
-            )}
+            {(() => {
+              const currentStatus = testResult || aiStatus;
+              if (!currentStatus) return null;
+              const isAvailable = currentStatus.status === 'available';
+              const displayProvider = currentStatus.provider === 'cloud' ? 'Cloud Naturalist' : currentStatus.provider;
+              const displayModel = currentStatus.model || (selectedMode === 'cloud' ? 'gemini-3.8-flash' : ollamaModel);
+              return (
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-parchment-warm text-forest-deep border border-border-subtle flex items-center gap-1.5 shadow-2xs">
+                  <span className={`w-1.5 h-1.5 rounded-full ${isAvailable ? 'bg-emerald-600' : 'bg-amber-600'}`} />
+                  <span>Active: {displayProvider} ({displayModel})</span>
+                </span>
+              );
+            })()}
           </div>
           <h2 className="font-editorial text-2xl sm:text-3xl font-bold text-forest-deep">
             AI Engine & Settings
@@ -329,6 +371,85 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                 </div>
               </div>
 
+              {/* Live Real-Time Cloud Engine Status & Model Chain */}
+              {(() => {
+                const currentStatus = testResult || aiStatus;
+                const isAvailable = currentStatus?.status === 'available';
+                const cloudService = currentStatus?.cloudService === 'groq' ? 'Groq Cloud' : 'Google Gemini';
+                const primaryModel = currentStatus?.model || 'gemini-3.8-flash';
+                const fallbackList = currentStatus?.fallbackModels && currentStatus.fallbackModels.length > 0
+                  ? currentStatus.fallbackModels
+                  : ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest'];
+
+                return (
+                  <div className="p-4 rounded-xl border border-border-subtle bg-paper-white space-y-3 shadow-2xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full ${isAvailable ? 'bg-emerald-500 ring-2 ring-emerald-200 animate-pulse' : 'bg-amber-500 ring-2 ring-amber-200'}`} />
+                        <span className="font-editorial text-sm font-bold text-forest-deep flex items-center gap-1.5">
+                          <Cloud className="w-4 h-4 text-leaf-accent" />
+                          <span>Real-Time Cloud Engine: {cloudService}</span>
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          isAvailable
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                        }`}
+                      >
+                        {isAvailable ? '● Connected & Verified' : 'Standby / Fallback'}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 pt-1 border-t border-border-subtle/50 text-xs">
+                      {/* Active Primary Model */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold text-text-muted">Active Primary Model:</span>
+                        <span className="font-mono text-xs font-bold text-forest-deep bg-parchment-warm px-2.5 py-0.5 rounded-md border border-border-subtle shadow-2xs">
+                          {primaryModel}
+                        </span>
+                        <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded">
+                          Live Inference
+                        </span>
+                      </div>
+
+                      {/* Sequential Fallback Chain */}
+                      <div>
+                        <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider block mb-1">
+                          Sequential Fallback Chain (Active from .env):
+                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-forest-deep text-paper-white shadow-2xs">
+                            1. {primaryModel}
+                          </span>
+                          {fallbackList.map((fb, idx) => (
+                            <span
+                              key={fb}
+                              className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-forest-deep/5 text-forest-deep border border-border-subtle"
+                            >
+                              {idx + 2}. {fb}
+                            </span>
+                          ))}
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200">
+                            &rarr; Local Ollama
+                          </span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-parchment-warm text-text-muted border border-border-subtle">
+                            &rarr; Curated Library
+                          </span>
+                        </div>
+                      </div>
+
+                      {currentStatus?.message && (
+                        <p className="text-[11px] text-text-muted bg-parchment-warm/40 p-2 rounded-lg border border-border-subtle/40 leading-relaxed font-mono">
+                          {currentStatus.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* Visual Pipeline Flow */}
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -336,7 +457,7 @@ export const AISettingsModal: React.FC<AISettingsModalProps> = ({
                     <span className="text-[10px] font-bold text-moss-green uppercase block">Step 1 • Primary</span>
                     <h5 className="font-editorial text-xs font-bold text-forest-deep flex items-center gap-1">
                       <Cloud className="w-3 h-3 text-moss-green" />
-                      <span>Production Cloud AI</span>
+                      <span>{(testResult || aiStatus)?.model || 'gemini-3.8-flash'}</span>
                     </h5>
                     <p className="text-[10px] text-text-muted leading-tight">
                       Executes via server-managed cloud models with zero client configuration.

@@ -454,7 +454,7 @@ export const ActiveAdventureScreen: React.FC = () => {
         : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
       const cloudModel = cloudService === 'groq'
         ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
-        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-3.8-flash');
       const model = mode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || undefined);
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || undefined;
 

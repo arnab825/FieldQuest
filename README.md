@@ -211,6 +211,22 @@ npm run podman:down
 
 ---
 
+## Production Cloud AI Setup (Gemini & Groq with Multi-Model Fallbacks)
+
+FieldQuest natively supports production cloud models out-of-the-box using Google Gemini and Groq Cloud, complete with **automatic multi-model fallback chains**. If a model hits quota, is rate-limited (429), or is unavailable, FieldQuest automatically falls back to the next model in the list:
+
+```env
+# Google Gemini (free-tier cloud models with fallback chain)
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_MODELS=gemini-3.8-flash,gemini-3.1-flash-lite,gemini-flash-latest,gemini-flash-lite-latest
+
+# Groq Cloud (ultra-fast inference models with fallback chain)
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODELS=llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-120b
+```
+
+---
+
 ## Setting Up Real Local AI with Ollama
 
 To use live open-weight model generation:

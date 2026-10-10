@@ -96,4 +96,6 @@ export interface AIProviderStatus {
   };
   error?: string;
   installedModels?: string[];
+  fallbackModels?: string[];
+  configuredModels?: string[];
 }

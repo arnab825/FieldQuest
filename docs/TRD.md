@@ -220,8 +220,8 @@ export interface AIMissionProvider {
 
 ### 5.1 Cloud Provider (`CloudMissionProvider`)
 - High-efficiency production provider connecting to:
-  - **Google Gemini API:** `gemini-1.5-flash` or `gemini-2.0-flash` free tier via `GEMINI_API_KEY`.
-  - **Groq Cloud API:** OpenAI-compatible `/chat/completions` endpoint for `llama-3.3-70b-versatile` or `qwen-2.5-32b` free tier via `GROQ_API_KEY`.
+  - **Google Gemini API:** `gemini-3.8-flash`, `gemini-3.1-flash-lite`, `gemini-flash-latest`, or `gemini-flash-lite-latest` free tier via `GEMINI_API_KEY` (with multi-model fallback chains).
+  - **Groq Cloud API:** OpenAI-compatible `/chat/completions` endpoint for `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, or `openai/gpt-oss-120b` via `GROQ_API_KEY`.
 - Zero client key entry required: keys remain secured on the backend in `.env`.
 - System prompts enforce strict JSON formatting and rigorous ecological safety guardrails.
 - Quota exhaustion (HTTP 429 / quota limit) and network errors trigger immediate fallback to Tier 2 (Ollama) and Tier 3 (Demo).

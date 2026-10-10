@@ -16,6 +16,8 @@ export interface ProviderAvailability {
   };
   error?: string;
   installedModels?: string[];
+  fallbackModels?: string[];
+  configuredModels?: string[];
 }
 
 export interface AIMissionProvider {

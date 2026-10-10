@@ -23,8 +23,10 @@ export class MissionGeneratorService {
       defaultService: config.cloudProvider,
       geminiApiKey: config.geminiApiKey,
       geminiModel: config.geminiModel,
+      geminiModels: config.geminiModels,
       groqApiKey: config.groqApiKey,
       groqModel: config.groqModel,
+      groqModels: config.groqModels,
     });
   }
 

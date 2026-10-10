@@ -63,7 +63,7 @@ export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSe
         : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
       const cloudModel = cloudService === 'groq'
         ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
-        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-3.8-flash');
       const model = mode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b');
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';
       return fetchAIStatus(mode, model, endpoint, cloudService, cloudApiKey);
@@ -82,7 +82,7 @@ export const AdventureSetupForm: React.FC<AdventureSetupFormProps> = ({ onOpenSe
         : localStorage.getItem('fieldquest_gemini_api_key') || undefined;
       const cloudModel = cloudService === 'groq'
         ? (localStorage.getItem('fieldquest_groq_model') || 'llama-3.3-70b-versatile')
-        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-1.5-flash');
+        : (localStorage.getItem('fieldquest_gemini_model') || 'gemini-3.8-flash');
 
       const model = activeMode === 'cloud' ? cloudModel : (localStorage.getItem('fieldquest_ollama_model') || 'qwen2.5:3b');
       const endpoint = localStorage.getItem('fieldquest_ollama_endpoint') || 'http://localhost:11434';

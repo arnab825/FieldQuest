@@ -60,9 +60,11 @@ FieldQuest's architecture intentionally decouples the client PWA from the backen
 | `CLIENT_ORIGIN` | `https://your-domain.com` | Allowed CORS origin (comma-separated or single) |
 | `AI_PROVIDER` | `cloud` | Active mission generator provider (`cloud`, `ollama`, `demo`) |
 | `GEMINI_API_KEY` | *(optional)* | Google Gemini API key for free-tier cloud generation |
-| `GEMINI_MODEL` | `gemini-1.5-flash` | Gemini model ID (`gemini-1.5-flash`, `gemini-2.0-flash`) |
-| `GROQ_API_KEY` | *(optional)* | Groq Cloud API key for ultra-fast Llama 3.3 generation |
-| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model ID |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Gemini model ID (or primary model) |
+| `GEMINI_MODELS` | `gemini-3.8-flash,gemini-3.1-flash-lite,gemini-flash-latest,gemini-flash-lite-latest` | Comma-separated Gemini fallback model chain |
+| `GROQ_API_KEY` | *(optional)* | Groq Cloud API key for ultra-fast Llama / GPT generation |
+| `GROQ_MODEL` | `llama-3.3-70b-versatile` | Groq model ID (or primary model) |
+| `GROQ_MODELS` | `llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-120b` | Comma-separated Groq fallback model chain |
 | `CLOUD_PROVIDER` | `gemini` | Primary cloud provider (`gemini` or `groq`) |
 | `OLLAMA_BASE_URL`| `http://localhost:11434`| Address of Ollama daemon |
 | `OLLAMA_MODEL` | `qwen2.5:3b` | Open-weight model tag |

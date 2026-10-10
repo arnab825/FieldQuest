@@ -8,7 +8,25 @@ export interface CloudProviderOptions {
   service?: 'gemini' | 'groq';
   apiKey?: string;
   model?: string;
+  models?: string[];
   timeoutMs?: number;
+}
+
+function resolveModelList(configuredModels: string[], requestedModel?: string, requestedModels?: string[]): string[] {
+  if (requestedModels && requestedModels.length > 0) {
+    return requestedModels;
+  }
+  if (requestedModel) {
+    const requested = requestedModel.split(',').map((m) => m.trim()).filter(Boolean);
+    const combined = [...requested];
+    for (const model of configuredModels) {
+      if (!combined.includes(model)) {
+        combined.push(model);
+      }
+    }
+    return combined.length > 0 ? combined : configuredModels;
+  }
+  return configuredModels;
 }
 
 export class CloudMissionProvider implements AIMissionProvider {
@@ -16,8 +34,8 @@ export class CloudMissionProvider implements AIMissionProvider {
   public defaultService: 'gemini' | 'groq';
   public geminiApiKey?: string;
   public groqApiKey?: string;
-  public geminiModel: string;
-  public groqModel: string;
+  public geminiModels: string[];
+  public groqModels: string[];
   public timeoutMs: number;
 
   constructor(options?: {
@@ -25,15 +43,44 @@ export class CloudMissionProvider implements AIMissionProvider {
     geminiApiKey?: string;
     groqApiKey?: string;
     geminiModel?: string;
+    geminiModels?: string[];
     groqModel?: string;
+    groqModels?: string[];
     timeoutMs?: number;
   }) {
     this.defaultService = options?.defaultService || 'gemini';
     this.geminiApiKey = options?.geminiApiKey;
     this.groqApiKey = options?.groqApiKey;
-    this.geminiModel = options?.geminiModel || 'gemini-1.5-flash';
-    this.groqModel = options?.groqModel || 'llama-3.3-70b-versatile';
+
+    const gModels = options?.geminiModels && options.geminiModels.length > 0
+      ? options.geminiModels
+      : (options?.geminiModel ? options.geminiModel.split(',').map(m => m.trim()).filter(Boolean) : ['gemini-3.8-flash']);
+    this.geminiModels = gModels.length > 0 ? gModels : ['gemini-3.8-flash'];
+
+    const grModels = options?.groqModels && options.groqModels.length > 0
+      ? options.groqModels
+      : (options?.groqModel ? options.groqModel.split(',').map(m => m.trim()).filter(Boolean) : ['llama-3.3-70b-versatile']);
+    this.groqModels = grModels.length > 0 ? grModels : ['llama-3.3-70b-versatile'];
+
     this.timeoutMs = options?.timeoutMs || 25000;
+  }
+
+  get geminiModel(): string {
+    return this.geminiModels[0] || 'gemini-3.8-flash';
+  }
+
+  set geminiModel(val: string) {
+    const list = val.split(',').map(m => m.trim()).filter(Boolean);
+    this.geminiModels = list.length > 0 ? list : [val];
+  }
+
+  get groqModel(): string {
+    return this.groqModels[0] || 'llama-3.3-70b-versatile';
+  }
+
+  set groqModel(val: string) {
+    const list = val.split(',').map(m => m.trim()).filter(Boolean);
+    this.groqModels = list.length > 0 ? list : [val];
   }
 
   get modelId(): string {
@@ -49,56 +96,76 @@ export class CloudMissionProvider implements AIMissionProvider {
     const geminiKey = options?.apiKey || this.geminiApiKey;
     const groqKey = options?.apiKey || this.groqApiKey;
 
+    const candidateGeminiModels = resolveModelList(
+      this.geminiModels,
+      options?.service === 'gemini' ? options?.model : undefined,
+      options?.service === 'gemini' ? options?.models : undefined
+    );
+
+    const candidateGroqModels = resolveModelList(
+      this.groqModels,
+      options?.service === 'groq' ? options?.model : undefined,
+      options?.service === 'groq' ? options?.models : undefined
+    );
+
     // Check Gemini first if key exists
     if (geminiKey && geminiKey.trim()) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 7000);
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}?key=${geminiKey.trim()}`;
-        const res = await fetch(url, { signal: controller.signal });
-        clearTimeout(timer);
+      for (const model of candidateGeminiModels) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 7000);
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}?key=${geminiKey.trim()}`;
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
 
-        if (res.ok) {
-          return {
-            available: true,
-            status: 'available',
-            provider: 'cloud',
-            cloudService: 'gemini',
-            model: this.geminiModel,
-            message: `Cloud Naturalist Engine connected via Google Gemini (${this.geminiModel}) with automatic local failover.`,
-          };
+          if (res.ok) {
+            return {
+              available: true,
+              status: 'available',
+              provider: 'cloud',
+              cloudService: 'gemini',
+              model: model,
+              fallbackModels: candidateGeminiModels.filter((m) => m !== model),
+              configuredModels: candidateGeminiModels,
+              message: `Cloud Naturalist Engine connected via Google Gemini (${model})${candidateGeminiModels.length > 1 ? ` with fallback models: ${candidateGeminiModels.slice(1).join(', ')}` : ''}.`,
+            };
+          }
+        } catch (err) {
+          console.warn(`[FieldQuest AI] Gemini ping failed for model '${model}':`, err);
         }
-      } catch (err) {
-        console.warn('[FieldQuest AI] Gemini ping failed, checking secondary cloud key:', err);
       }
     }
 
     // Check Groq if key exists
     if (groqKey && groqKey.trim()) {
-      try {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 7000);
-        const res = await fetch('https://api.groq.com/openai/v1/models', {
-          signal: controller.signal,
-          headers: {
-            'Authorization': `Bearer ${groqKey.trim()}`,
-            'Accept': 'application/json',
-          },
-        });
-        clearTimeout(timer);
+      for (const model of candidateGroqModels) {
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 7000);
+          const res = await fetch('https://api.groq.com/openai/v1/models', {
+            signal: controller.signal,
+            headers: {
+              'Authorization': `Bearer ${groqKey.trim()}`,
+              'Accept': 'application/json',
+            },
+          });
+          clearTimeout(timer);
 
-        if (res.ok) {
-          return {
-            available: true,
-            status: 'available',
-            provider: 'cloud',
-            cloudService: 'groq',
-            model: this.groqModel,
-            message: `Cloud Naturalist Engine connected via Groq Cloud (${this.groqModel}) with automatic local failover.`,
-          };
+          if (res.ok) {
+            return {
+              available: true,
+              status: 'available',
+              provider: 'cloud',
+              cloudService: 'groq',
+              model: model,
+              fallbackModels: candidateGroqModels.filter((m) => m !== model),
+              configuredModels: candidateGroqModels,
+              message: `Cloud Naturalist Engine connected via Groq Cloud (${model})${candidateGroqModels.length > 1 ? ` with fallback models: ${candidateGroqModels.slice(1).join(', ')}` : ''}.`,
+            };
+          }
+        } catch (err) {
+          console.warn(`[FieldQuest AI] Groq ping failed for model '${model}':`, err);
         }
-      } catch (err) {
-        console.warn('[FieldQuest AI] Groq ping failed:', err);
       }
     }
 
@@ -107,12 +174,14 @@ export class CloudMissionProvider implements AIMissionProvider {
       status: 'unavailable',
       provider: 'cloud',
       model: this.modelId,
+      fallbackModels: this.geminiModels.slice(1),
+      configuredModels: this.geminiModels,
       message: 'No cloud API key active or keys exhausted. Automatic failover to Local AI (Ollama) or curated offline library is active.',
     };
   }
 
   /**
-   * Generate live missions using Google Gemini or Groq Cloud, with multi-cloud failover
+   * Generate live missions using Google Gemini or Groq Cloud, with multi-cloud and multi-model failover
    */
   async generateMissions(
     preferences: AdventurePreferences,
@@ -124,35 +193,62 @@ export class CloudMissionProvider implements AIMissionProvider {
     const systemPrompt = buildSystemPrompt(preferences);
     const userPrompt = buildUserPrompt(preferences);
 
+    const geminiList = resolveModelList(
+      this.geminiModels,
+      options?.service === 'gemini' ? options?.model : (!options?.service ? options?.model : undefined),
+      options?.service === 'gemini' ? options?.models : (!options?.service ? options?.models : undefined)
+    );
+
+    const groqList = resolveModelList(
+      this.groqModels,
+      options?.service === 'groq' ? options?.model : (!options?.service ? options?.model : undefined),
+      options?.service === 'groq' ? options?.models : (!options?.service ? options?.models : undefined)
+    );
+
     // 1. Try Gemini if key is provided
     if (geminiKey && geminiKey.trim()) {
-      try {
-        const rawOutput = await this.callGemini(geminiKey.trim(), this.geminiModel, systemPrompt, userPrompt);
-        return this.parseAndValidateMissions(rawOutput);
-      } catch (err: any) {
-        console.warn(`[FieldQuest AI] Gemini cloud call failed (${err.message}).`);
-        // If Groq key also exists, try Groq before declaring cloud exhausted
-        if (groqKey && groqKey.trim()) {
+      let lastGeminiError: any = null;
+
+      for (const model of geminiList) {
+        try {
+          const rawOutput = await this.callGemini(geminiKey.trim(), model, systemPrompt, userPrompt);
+          return this.parseAndValidateMissions(rawOutput);
+        } catch (err: any) {
+          lastGeminiError = err;
+          console.warn(`[FieldQuest AI] Gemini model '${model}' failed (${err.message}). Trying next fallback model...`);
+        }
+      }
+
+      console.warn('[FieldQuest AI] All configured Gemini models failed.');
+
+      // If Groq key also exists, try Groq fallback chain before declaring cloud exhausted
+      if (groqKey && groqKey.trim()) {
+        for (const model of groqList) {
           try {
-            console.log('[FieldQuest AI] Attempting Groq secondary cloud failover...');
-            const rawOutput = await this.callGroq(groqKey.trim(), this.groqModel, systemPrompt, userPrompt);
+            console.log(`[FieldQuest AI] Attempting Groq secondary cloud failover with model '${model}'...`);
+            const rawOutput = await this.callGroq(groqKey.trim(), model, systemPrompt, userPrompt);
             return this.parseAndValidateMissions(rawOutput);
           } catch (groqErr: any) {
-            console.warn(`[FieldQuest AI] Groq secondary cloud call failed (${groqErr.message}).`);
+            console.warn(`[FieldQuest AI] Groq model '${model}' call failed (${groqErr.message}). Trying next fallback model...`);
           }
         }
-        throw new AIProviderError('CLOUD_EXHAUSTED', `Cloud AI exhausted: ${err.message}`);
       }
+      throw new AIProviderError('CLOUD_EXHAUSTED', `Cloud AI exhausted: ${lastGeminiError?.message || 'All models failed'}`);
     }
 
     // 2. Try Groq if Gemini key not provided but Groq key is
     if (groqKey && groqKey.trim()) {
-      try {
-        const rawOutput = await this.callGroq(groqKey.trim(), this.groqModel, systemPrompt, userPrompt);
-        return this.parseAndValidateMissions(rawOutput);
-      } catch (err: any) {
-        throw new AIProviderError('CLOUD_EXHAUSTED', `Groq Cloud exhausted: ${err.message}`);
+      let lastGroqError: any = null;
+      for (const model of groqList) {
+        try {
+          const rawOutput = await this.callGroq(groqKey.trim(), model, systemPrompt, userPrompt);
+          return this.parseAndValidateMissions(rawOutput);
+        } catch (err: any) {
+          lastGroqError = err;
+          console.warn(`[FieldQuest AI] Groq model '${model}' call failed (${err.message}). Trying next fallback model...`);
+        }
       }
+      throw new AIProviderError('CLOUD_EXHAUSTED', `Groq Cloud exhausted: ${lastGroqError?.message || 'All Groq models failed'}`);
     }
 
     throw new AIProviderError(
@@ -186,11 +282,36 @@ Notes: "${missionData.customNotes || 'None'}"
 
 Provide 2-3 sentences of inspiring, scientifically grounded field commentary expanding their sensory observation and highlighting ecological connections. Output plain text only.`;
 
+    const geminiList = resolveModelList(
+      this.geminiModels,
+      options?.service === 'gemini' ? options?.model : (!options?.service ? options?.model : undefined),
+      options?.service === 'gemini' ? options?.models : (!options?.service ? options?.models : undefined)
+    );
+
+    const groqList = resolveModelList(
+      this.groqModels,
+      options?.service === 'groq' ? options?.model : (!options?.service ? options?.model : undefined),
+      options?.service === 'groq' ? options?.models : (!options?.service ? options?.models : undefined)
+    );
+
     if (geminiKey && geminiKey.trim()) {
-      return await this.callGemini(geminiKey.trim(), this.geminiModel, 'You are an expert field naturalist.', prompt);
+      for (const model of geminiList) {
+        try {
+          return await this.callGemini(geminiKey.trim(), model, 'You are an expert field naturalist.', prompt);
+        } catch (err: any) {
+          console.warn(`[FieldQuest AI] Scaffold: Gemini model '${model}' failed (${err.message}). Trying next fallback model...`);
+        }
+      }
     }
+
     if (groqKey && groqKey.trim()) {
-      return await this.callGroq(groqKey.trim(), this.groqModel, 'You are an expert field naturalist.', prompt);
+      for (const model of groqList) {
+        try {
+          return await this.callGroq(groqKey.trim(), model, 'You are an expert field naturalist.', prompt);
+        } catch (err: any) {
+          console.warn(`[FieldQuest AI] Scaffold: Groq model '${model}' failed (${err.message}). Trying next fallback model...`);
+        }
+      }
     }
 
     throw new AIProviderError('NO_CLOUD_KEYS', 'No cloud API key configured on server.');
